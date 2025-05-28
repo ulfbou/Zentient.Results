@@ -1,7 +1,7 @@
 # Zentient.Results
 
-[](https://www.google.com/search?q=https://www.nuget.org/packages/Zentient.Results/)
-[](https://www.google.com/search?q=LICENSE)
+[](https://www.nuget.org/packages/Zentient.Results/)
+[](https://github.com/ulfbou/Zentient.Results/blob/main/LICENSE)
 
 Zentient.Results is a lightweight, opinionated .NET library that provides a robust and consistent approach to handling operation outcomes. It introduces immutable result types to encapsulate success values or structured error information, promoting clean architecture principles, enhancing code readability, and streamlining error propagation across application layers. This framework is designed to align with modern functional programming paradigms and improve the predictability of your application's behavior.
 
@@ -133,14 +133,16 @@ Zentient.Results is built on several core design principles:
   * **ASP.NET Core Integration:** Leverage extension methods or middleware to automatically convert `IResult` types returned from controllers into appropriate `IActionResult` responses.
   * **Serialization Behavior:** `Result` and `Result<T>` are designed to be compatible with `System.Text.Json` for seamless serialization, typically exposing `IsSuccess`, `Errors`, `Messages`, and `Status` properties.
 
+For more in-depth examples and advanced usage patterns, please refer to the [Zentient.Results Wiki](https://github.com/ulfbou/Zentient.Results/wiki).
+
 ## Contributing
 
-We welcome contributions to Zentient.Results\! Please refer to our [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to submit issues, propose features, or contribute code. We adhere to standard .NET coding conventions.
+We welcome contributions to Zentient.Results\! Please refer to our [CONTRIBUTING.md](https://github.com/ulfbou/Zentient.Results/blob/main/CONTRIBUTING.md) for guidelines on how to submit issues, propose features, or contribute code. We adhere to standard .NET coding conventions.
 
 ## License
 
-Zentient.Results is licensed under the [MIT License](LICENSE).
+Zentient.Results is licensed under the [MIT License](https://github.com/ulfbou/Zentient.Results/blob/main/LICENSE).
 
 ## Support & Contact
 
-For any issues, questions, or feature requests, please use the [GitHub Issues](https://github.com/ulfbou/Zentient/issues) page.
+For any issues, questions, or feature requests, please use the [GitHub Issues](https://github.com/ulfbou/Zentient.Results/issues) page.
