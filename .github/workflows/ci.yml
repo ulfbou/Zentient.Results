@@ -1,0 +1,41 @@
+name: Validate Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Zentient.Results/**/*.md'
+      - 'Zentient.Results.AspNetCore/**/*.md'
+      - 'Zentient.Utilities/**/*.md'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Zentient.Results/**/*.md'
+      - 'Zentient.Results.AspNetCore/**/*.md'
+      - 'Zentient.Utilities/**/*.md'
+
+jobs:
+  lint-docs:
+    runs-on: ubuntu-latest
+    name: Lint Markdown Documentation
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Lint Markdown files
+      uses: DavidAnson/markdownlint-cli2-action@v14
+      with:
+        globs: |
+          Zentient.Results/**/*.md
+          Zentient.Results.AspNetCore/**/*.md
+          Zentient.Utilities/**/*.md
+
+    - name: Upload docs as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: documentation-markdown
+        path: |
+          Zentient.Results/
+          Zentient.Results.AspNetCore/
+          Zentient.Utilities/
