@@ -238,7 +238,14 @@ namespace Zentient.Results
         {
             if (IsSuccess)
                 return $"Result: Success ({Status}){(Messages.Count > 0 ? $" | Message: {string.Join("; ", Messages)}" : "")}";
-            return $"Result: Failure ({Status}) | Error: {InternalError} | All Errors: {string.Join("; ", Errors.Select(e => e.ToString()))}";
+
+#if NET8_0_OR_GREATER
+            // .NET 8+ supports string.Join with IEnumerable<string>
+            return $"Result: Failure ({Status}) | Error: {Error} | All Errors: {string.Join("; ", Errors.Select(e => e.ToString()))}";
+#else
+    // For earlier frameworks, convert to array first
+    return $"Result: Failure ({Status}) | Error: {Error} | All Errors: {string.Join("; ", Errors.Select(e => e.ToString()).ToArray())}";
+#endif
         }
     }
 }

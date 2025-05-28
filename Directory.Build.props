@@ -4,7 +4,7 @@
 		<!-- Common Metadata -->
 		<Authors>Ulf Bourelius</Authors>
 		<Copyright>Copyright © 2025 Ulf Bourelius</Copyright>
-		<RepositoryUrl>https://github.com/your-repo</RepositoryUrl>
+		<RepositoryUrl>https://github.com/ulfbou/Zentient</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageProjectUrl>https://github.com/ulfbou/Zentient</PackageProjectUrl>
@@ -29,6 +29,25 @@
 		<ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
 	</PropertyGroup>
 
+	<!-- Version-specific compilation symbols -->
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net7.0'">
+		<DefineConstants>$(DefineConstants);NET7_0_OR_GREATER</DefineConstants>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<DefineConstants>$(DefineConstants);NET8_0_OR_GREATER</DefineConstants>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net9.0'">
+		<DefineConstants>$(DefineConstants);NET9_0_OR_GREATER;NET8_0_OR_GREATER</DefineConstants>
+	</PropertyGroup>
+
+	<!-- Documentation -->
+	<ItemGroup Condition="'$(MSBuildProjectName)' == 'Zentient.Docs'">
+		<None Include="Zentient.Results\**\*.md" />
+		<None Include="Zentient.Results.AspNetCore\**\*.md" />
+		<None Include="Zentient.Utilities\**\*.md" />
+	</ItemGroup>
+
+	<!-- Common Package References-->
 	<ItemGroup>
 		<PackageVersion Include="Microsoft.Extensions.Configuration" Version="[6.0.0,)" Condition="'$(TargetFramework)' == 'net6.0'" />
 		<PackageVersion Include="Microsoft.Extensions.Configuration" Version="[7.0.0,)" Condition="'$(TargetFramework)' == 'net7.0'" />
@@ -44,5 +63,9 @@
 		<PackageVersion Include="Microsoft.Extensions.Options" Version="[7.0.0,)" Condition="'$(TargetFramework)' == 'net7.0'" />
 		<PackageVersion Include="Microsoft.Extensions.Options" Version="[8.0.0,)" Condition="'$(TargetFramework)' == 'net8.0'" />
 		<PackageVersion Include="Microsoft.Extensions.Options" Version="[9.0.0,)" Condition="'$(TargetFramework)' == 'net9.0'" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
 	</ItemGroup>
 </Project>
