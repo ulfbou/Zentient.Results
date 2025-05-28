@@ -1,0 +1,14 @@
+<!-- Docs/Zentient.Docs.csproj -->
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<IsPackable>false</IsPackable>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Content Include="Zentient.Results\**\*.md" />
+		<Content Include="Zentient.Results.AspNetCore\**\*.md" />
+		<Content Include="Zentient.Utilities\**\*.md" />
+	</ItemGroup>
+</Project>
