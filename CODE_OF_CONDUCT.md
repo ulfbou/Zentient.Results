@@ -60,7 +60,7 @@ Project maintainers will follow these Community Impact Guidelines in determining
 
 ## Reporting Violations
 
-If you experience or witness unacceptable behavior, or have any other concerns, please report it as soon as possible by contacting the project maintainers at **ulf.bou@outlook.com**.
+If you experience or witness unacceptable behavior, or have any other concerns, please report it as soon as possible by contacting the project maintainers at **zentientdev@gmail.com**.
 
 All complaints will be reviewed and investigated promptly and fairly. All maintainers are obligated to respect the privacy and security of the reporter of any incident.
 
