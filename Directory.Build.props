@@ -1,0 +1,48 @@
+<!-- Directory.Build.props -->
+<Project>
+	<PropertyGroup>
+		<!-- Common Metadata -->
+		<Authors>Ulf Bourelius</Authors>
+		<Copyright>Copyright © 2025 Ulf Bourelius</Copyright>
+		<RepositoryUrl>https://github.com/your-repo</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageProjectUrl>https://github.com/ulfbou/Zentient</PackageProjectUrl>
+
+		<!-- Build Settings -->
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+
+		<!-- Debug and Release Configurations -->
+		<DebugType Condition="'$(Configuration)' == 'Debug'">portable</DebugType>
+		<DebugType Condition="'$(Configuration)' == 'Release'">embedded</DebugType>
+		<Optimize Condition="'$(Configuration)' == 'Release'">true</Optimize>
+		<OutputPath>bin\$(Configuration)\</OutputPath>
+		<DebugSymbols Condition="'$(Configuration)' == 'Debug'">true</DebugSymbols>
+		<DebugSymbols Condition="'$(Configuration)' == 'Release'">false</DebugSymbols>
+		<DefineConstants Condition="'$(Configuration)' == 'Debug'">DEBUG;TRACE</DefineConstants>
+		<DefineConstants Condition="'$(Configuration)' == 'Release'">TRACE</DefineConstants>
+
+		<!-- Centralized Package Version Management -->
+		<ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageVersion Include="Microsoft.Extensions.Configuration" Version="[6.0.0,)" Condition="'$(TargetFramework)' == 'net6.0'" />
+		<PackageVersion Include="Microsoft.Extensions.Configuration" Version="[7.0.0,)" Condition="'$(TargetFramework)' == 'net7.0'" />
+		<PackageVersion Include="Microsoft.Extensions.Configuration" Version="[8.0.0,)" Condition="'$(TargetFramework)' == 'net8.0'" />
+		<PackageVersion Include="Microsoft.Extensions.Configuration" Version="[9.0.0,)" Condition="'$(TargetFramework)' == 'net9.0'" />
+
+		<PackageVersion Include="Microsoft.Extensions.Logging" Version="[6.0.0,)" Condition="'$(TargetFramework)' == 'net6.0'" />
+		<PackageVersion Include="Microsoft.Extensions.Logging" Version="[7.0.0,)" Condition="'$(TargetFramework)' == 'net7.0'" />
+		<PackageVersion Include="Microsoft.Extensions.Logging" Version="[8.0.0,)" Condition="'$(TargetFramework)' == 'net8.0'" />
+		<PackageVersion Include="Microsoft.Extensions.Logging" Version="[9.0.0,)" Condition="'$(TargetFramework)' == 'net9.0'" />
+
+		<PackageVersion Include="Microsoft.Extensions.Options" Version="[6.0.0,)" Condition="'$(TargetFramework)' == 'net6.0'" />
+		<PackageVersion Include="Microsoft.Extensions.Options" Version="[7.0.0,)" Condition="'$(TargetFramework)' == 'net7.0'" />
+		<PackageVersion Include="Microsoft.Extensions.Options" Version="[8.0.0,)" Condition="'$(TargetFramework)' == 'net8.0'" />
+		<PackageVersion Include="Microsoft.Extensions.Options" Version="[9.0.0,)" Condition="'$(TargetFramework)' == 'net9.0'" />
+	</ItemGroup>
+</Project>
