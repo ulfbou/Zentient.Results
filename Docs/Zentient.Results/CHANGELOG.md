@@ -1,5 +1,25 @@
 # Changelog
 
+---
+
+## Version 0.2.0 (Current Release)
+
+This release introduces significant enhancements to the `Zentient.Results` library, focusing on improved consistency, robustness, and internal clarity. Key updates include renaming `DefaultResultStatus` for better alignment, refining the `ErrorInfo` message retrieval, and enhancing the `Result<T>` structure for more explicit value handling.
+
+### ✨ Features & Enhancements
+
+* **Renamed `DefaultResultStatus` to `ResultStatus`**: The concrete implementation of `IResultStatus` has been renamed from `DefaultResultStatus` to `ResultStatus`. This change simplifies the naming convention and makes it more intuitive for users, reflecting its primary role as the standard status object.
+* **Refined `ErrorInfo` Message Retrieval in `Result<T>`**: The lazy evaluation of the `Error` property in `Result<T>` has been enhanced. It now prioritizes `ErrorInfo.Message`, then `ErrorInfo.Code`, and finally `ErrorInfo.Data.ToString()` for a more robust and predictable retrieval of the primary error message when multiple pieces of information are available.
+* **Explicit `Value` Handling in `Result<T>.Failure` Factory Methods**: All `Result<T>.Failure` factory methods now explicitly accept a `T? value` parameter. This allows for scenarios where a default or partially constructed value might still be useful even in a failed result, providing more flexibility in error handling pipelines.
+* **Introduced `ResultException` for `ThrowIfFailure`**: A new custom exception type, `ResultException`, has been introduced. This exception is specifically thrown by the `ThrowIfFailure()` extension method (which now lives in `ResultExtensions`), providing a structured way to expose `IReadOnlyList<ErrorInfo>` when a result is forcibly unwrapped on failure.
+* **Improved Error Handling in `Result<T>.Failure` Overloads**:
+    * The `Failure(T? value, IEnumerable<ErrorInfo> errors, IResultStatus status)` method now includes explicit `Guard` clauses to prevent `null` or empty `errors` collections, enhancing robustness and preventing invalid result states.
+    * The error message for `ArgumentException` now correctly states "Error messages cannot be null or empty."
+* **Enhanced `ResultStatus` Equality**: `ResultStatus` now explicitly implements `IEquatable<ResultStatus>`, ensuring correct and consistent value equality comparisons for result statuses throughout the application.
+* **Added `Result<T>.NoContent()` Factory Method**: A new static factory method `Result<T>.NoContent(string? message = null)` has been added for generic results. This provides a clear and consistent way to indicate a successful operation with no content, aligning with HTTP 204 No Content semantics, particularly useful when `T` is a value type or when an empty value is ambiguous.
+
+---
+
 ## Version 0.1.0 (Initial Release)
 
 This is the inaugural release of the Zentient.Results library, providing a robust and flexible framework for handling operation outcomes with explicit success and failure states.
