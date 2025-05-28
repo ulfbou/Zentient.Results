@@ -21,7 +21,7 @@ If you find a bug, please open an issue on our [GitHub Issues page](https://gith
   * Screenshots or code snippets if helpful.
   * Your .NET version and operating system.
 
-### 2\. Suggesting Enhancements
+### 2. Suggesting Enhancements
 
 Do you have an idea for a new feature or an improvement to an existing one? We'd love to hear it\! Please open an issue on our [GitHub Issues page](https://github.com/ulfbou/Zentient.Results/issues) and describe your suggestion. Include:
 
@@ -29,7 +29,7 @@ Do you have an idea for a new feature or an improvement to an existing one? We'd
   * The problem it solves or the benefit it provides.
   * Any potential alternatives or considerations.
 
-### 3\. Writing Code
+### 3. Writing Code
 
 We welcome contributions of code for bug fixes, new features, or refactorings. Before starting any significant work, please:
 
@@ -37,7 +37,7 @@ We welcome contributions of code for bug fixes, new features, or refactorings. B
   * **Open an issue:** For new features or major changes, open an issue first to discuss your idea with the maintainers. This helps ensure alignment and avoids duplicate efforts.
   * **Fork the repository:** Create a fork of the `Zentient.Results` repository on GitHub.
 
-### 4\. Improving Documentation
+### 4. Improving Documentation
 
 High-quality documentation is crucial. If you find typos, inaccuracies, or areas that could be explained more clearly in the README, code comments, or the [Wiki](https://github.com/ulfbou/Zentient.Results/wiki), please consider contributing. You can submit a pull request with your changes or open an issue.
 
