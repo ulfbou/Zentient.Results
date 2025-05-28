@@ -1,4 +1,4 @@
-namespace Zentient.Results
+﻿namespace Zentient.Results
 {
     /// <summary>Provides constant values for result codes and their descriptions.</summary>
     internal static class Constants
