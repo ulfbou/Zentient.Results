@@ -29,7 +29,7 @@ namespace Zentient.Results.AspNetCore.Filters
         {
             _problemDetailsFactory = problemDetailsFactory;
             _problemTypeBaseUri = zentientProblemDetailsOptions.Value.ProblemTypeBaseUri
-                ?? "https://default.com/errors/";
+                ?? ProblemDetailsExtensions.FallbackProblemDetailsBaseUri;
         }
 
         /// <summary>
@@ -69,6 +69,7 @@ namespace Zentient.Results.AspNetCore.Filters
                 isGenericResult = true;
                 genericResultValueType = iResultGenericInterface.GetGenericArguments()[0];
                 var valueProp = zentientResultType.GetProperty("Value");
+
                 if (valueProp != null && valueProp.PropertyType == genericResultValueType)
                 {
                     value = valueProp.GetValue(zentientResult);
@@ -85,7 +86,6 @@ namespace Zentient.Results.AspNetCore.Filters
                     ? InvokeGenericResultsMethod("Ok", genericResultValueType, value)
                     : Microsoft.AspNetCore.Http.Results.NoContent(),
                 (int)HttpStatusCode.Created => isGenericResult && genericResultValueType != null
-                    // Pass both the URI string and the 'value' extracted earlier
                     ? InvokeGenericResultsMethod("Created", genericResultValueType, "https://default.com/created/", value)
                     : Microsoft.AspNetCore.Http.Results.StatusCode((int)HttpStatusCode.Created),
                 (int)HttpStatusCode.NoContent => Microsoft.AspNetCore.Http.Results.NoContent(),
@@ -97,7 +97,7 @@ namespace Zentient.Results.AspNetCore.Filters
         {
             var resultsType = typeof(Microsoft.AspNetCore.Http.Results);
             MethodInfo? genericMethodDefinition = null;
-            object?[] methodArgs; // Declare methodArgs here
+            object?[] methodArgs;
 
             if (methodName == "Ok")
             {
@@ -109,11 +109,12 @@ namespace Zentient.Results.AspNetCore.Filters
                         m.GetParameters().Length == 1 &&
                         m.GetParameters()[0].ParameterType.IsGenericParameter
                     );
+
                 if (genericMethodDefinition == null)
                 {
                     throw new InvalidOperationException($"Generic method 'Ok<T>(T value)' not found on Microsoft.AspNetCore.Http.Results.");
                 }
-                // For "Ok", the arguments array will contain just the value.
+
                 methodArgs = new object?[] { args?.FirstOrDefault() };
             }
             else if (methodName == "Created")
@@ -127,13 +128,13 @@ namespace Zentient.Results.AspNetCore.Filters
                         m.GetParameters()[0].ParameterType == typeof(string) &&
                         m.GetParameters()[1].ParameterType.IsGenericParameter
                     );
+
                 if (genericMethodDefinition == null)
                 {
                     throw new InvalidOperationException($"Generic method 'Created<T>(string uri, T value)' not found on Microsoft.AspNetCore.Http.Results.");
                 }
-                // For "Created", the arguments array will contain uri and value.
-                // Assuming args[0] is uri and args[1] is value.
-                methodArgs = args; // Use the original args for Created as it's already a two-element array
+
+                methodArgs = args;
             }
             else
             {
@@ -146,7 +147,7 @@ namespace Zentient.Results.AspNetCore.Filters
             }
 
             MethodInfo specificMethod = genericMethodDefinition.MakeGenericMethod(valueType);
-            return (Microsoft.AspNetCore.Http.IResult)specificMethod.Invoke(null, methodArgs)!; // Use methodArgs here
+            return (Microsoft.AspNetCore.Http.IResult)specificMethod.Invoke(null, methodArgs)!;
         }
     }
 }

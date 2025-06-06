@@ -45,7 +45,7 @@ namespace Zentient.Results.AspNetCore.Filters
             _problemDetailsFactory = problemDetailsFactory ?? throw new ArgumentNullException(nameof(problemDetailsFactory));
             _problemDetailsOptions = options?.Value ?? throw new ArgumentNullException(nameof(options));
             _problemTypeBaseUri = zentientProblemDetailsOptions.Value.ProblemTypeBaseUri
-                ?? "https://default.com/errors/";
+                ?? ProblemDetailsExtensions.FallbackProblemDetailsBaseUri;
         }
 
         /// <summary>
@@ -59,22 +59,31 @@ namespace Zentient.Results.AspNetCore.Filters
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
         {
-            if (context.Result is ObjectResult objectResult && objectResult.Value is Zentient.Results.IResult zentientResult)
+            if (context.Result is ObjectResult objectResult)
             {
-                context.Result = ConvertZentientResultToActionResult(zentientResult, context.HttpContext);
-            }
-            else if (context.Result is ObjectResult taskObjectResult && taskObjectResult.Value is Task<object> taskValue)
-            {
-                var resolvedValue = await taskValue;
-
-                if (resolvedValue is Zentient.Results.IResult zTaskResult)
+                IResult? zentientResult = null;
+                if (objectResult.Value is IResult directResult)
                 {
-                    context.Result = ConvertZentientResultToActionResult(zTaskResult, context.HttpContext);
+                    zentientResult = directResult;
                 }
-            }
-            else if (context.Result is Zentient.Results.IResult rawZentientResult)
-            {
-                context.Result = ConvertZentientResultToActionResult(rawZentientResult, context.HttpContext);
+                else if (objectResult.Value is Task<object> valueTask)
+                {
+                    var awaitedValue = await valueTask;
+
+                    if (awaitedValue is IResult awaitedResult)
+                    {
+                        zentientResult = awaitedResult;
+                    }
+                }
+                else if (objectResult.Value is Task<IResult> resultTask)
+                {
+                    zentientResult = await resultTask;
+                }
+
+                if (zentientResult != null)
+                {
+                    context.Result = ConvertZentientResultToActionResult(zentientResult, context.HttpContext);
+                }
             }
 
             await next();
@@ -90,25 +99,33 @@ namespace Zentient.Results.AspNetCore.Filters
         {
             if (zentientResult.IsSuccess)
             {
-                if (zentientResult is Zentient.Results.IResult<object> successResultWithObject)
+                object? value = null;
+                bool hasValue = false;
+                var zentientResultType = zentientResult.GetType();
+                var iResultGenericInterface = zentientResultType
+                    .GetInterfaces()
+                    .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(Zentient.Results.IResult<>));
+
+                if (iResultGenericInterface != null)
                 {
-                    return zentientResult.Status.Code switch
+                    var valueProp = zentientResultType.GetProperty("Value");
+
+                    if (valueProp != null && valueProp.CanRead)
                     {
-                        (int)HttpStatusCode.OK => new OkObjectResult(successResultWithObject.Value),
-                        (int)HttpStatusCode.Created => new CreatedResult(string.Empty, successResultWithObject.Value),
-                        (int)HttpStatusCode.Accepted => new AcceptedResult(string.Empty, successResultWithObject.Value),
-                        (int)HttpStatusCode.NoContent => new NoContentResult(),
-                        _ => new ObjectResult(successResultWithObject.Value) { StatusCode = (int)zentientResult.Status.ToHttpStatusCode() }
-                    };
+                        value = valueProp.GetValue(zentientResult);
+                        hasValue = true;
+                    }
                 }
 
                 return zentientResult.Status.Code switch
                 {
-                    (int)HttpStatusCode.OK => new NoContentResult(),
-                    (int)HttpStatusCode.Created => new StatusCodeResult((int)HttpStatusCode.Created),
-                    (int)HttpStatusCode.Accepted => new StatusCodeResult((int)HttpStatusCode.Accepted),
+                    (int)HttpStatusCode.OK => hasValue ? new OkObjectResult(value) : new NoContentResult(),
+                    (int)HttpStatusCode.Created => hasValue ? new CreatedResult(string.Empty, value) : new StatusCodeResult((int)HttpStatusCode.Created),
+                    (int)HttpStatusCode.Accepted => hasValue ? new AcceptedResult(string.Empty, value) : new StatusCodeResult((int)HttpStatusCode.Accepted),
                     (int)HttpStatusCode.NoContent => new NoContentResult(),
-                    _ => new StatusCodeResult((int)zentientResult.Status.ToHttpStatusCode())
+                    _ => hasValue
+                        ? new ObjectResult(value) { StatusCode = (int)zentientResult.Status.ToHttpStatusCode() }
+                        : new StatusCodeResult((int)zentientResult.Status.ToHttpStatusCode())
                 };
             }
 
@@ -116,9 +133,11 @@ namespace Zentient.Results.AspNetCore.Filters
 
             if (problemDetails is ValidationProblemDetails validationProblemDetails)
             {
-                return new UnprocessableEntityObjectResult(validationProblemDetails);
+                return new UnprocessableEntityObjectResult(validationProblemDetails)
+                {
+                    ContentTypes = { "application/problem+json" }
+                };
             }
-
             return new ObjectResult(problemDetails)
             {
                 StatusCode = problemDetails.Status ?? (int)HttpStatusCode.InternalServerError,
