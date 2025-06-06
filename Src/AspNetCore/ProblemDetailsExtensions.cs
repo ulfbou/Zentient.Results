@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure; // For ProblemDetailsFactory, DefaultProblemDetailsFactory
-using Microsoft.AspNetCore.Mvc.ModelBinding; // For ModelStateDictionary
-using Microsoft.Extensions.DependencyInjection; // For GetService
-using Microsoft.Extensions.Options; // For IOptions
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Zentient.Results;
 using System.Net;
-using Zentient.Utilities; // For HttpStatusCode
+using Zentient.Utilities;
 
 namespace Zentient.Results.AspNetCore
 {
@@ -212,11 +212,6 @@ namespace Zentient.Results.AspNetCore
                 ErrorCategory.Forbidden => HttpStatusCode.Forbidden,
                 ErrorCategory.ServiceUnavailable => HttpStatusCode.ServiceUnavailable,
                 ErrorCategory.InternalServerError => HttpStatusCode.InternalServerError,
-                //ErrorCategory.Unauthorized => HttpStatusCode.Unauthorized,
-                //ErrorCategory.Forbidden => HttpStatusCode.Forbidden,
-                //ErrorCategory.Concurrency => HttpStatusCode.Conflict,
-                //ErrorCategory.TooManyRequests => (HttpStatusCode)429,
-                //ErrorCategory.ExternalService => HttpStatusCode.ServiceUnavailable,
                 _ => HttpStatusCode.InternalServerError
             };
         }
