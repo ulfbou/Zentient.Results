@@ -17,8 +17,11 @@ namespace Zentient.Results.AspNetCore
     /// </summary>
     public static class ProblemDetailsExtensions
     {
-        // Base URI for problem types. Customize this to reflect your API's documentation.
-        public const string DefaultProblemTypeBaseUri = "https://yourdomain.com/errors/";
+        /// <summary>
+        /// The fallback URI for the base of problem details types, referencing the relevant section
+        /// of RFC 9110. This URI is used as a default when no custom problem type base URI is specified.
+        /// </summary>
+        public const string FallbackProblemDetailsBaseUri = "https://tools.ietf.org/html/rfc9110#section-15.5";
 
         /// <summary>
         /// Converts a failed <see cref="Zentient.Results.IResult"/> instance into an appropriate
@@ -49,7 +52,7 @@ namespace Zentient.Results.AspNetCore
 
             if (string.IsNullOrWhiteSpace(problemTypeBaseUri))
             {
-                problemTypeBaseUri = DefaultProblemTypeBaseUri;
+                problemTypeBaseUri = FallbackProblemDetailsBaseUri;
             }
             else if (!problemTypeBaseUri.EndsWith("/"))
             {
@@ -212,6 +215,11 @@ namespace Zentient.Results.AspNetCore
                 ErrorCategory.Forbidden => HttpStatusCode.Forbidden,
                 ErrorCategory.ServiceUnavailable => HttpStatusCode.ServiceUnavailable,
                 ErrorCategory.InternalServerError => HttpStatusCode.InternalServerError,
+                //ErrorCategory.Unauthorized => HttpStatusCode.Unauthorized,
+                //ErrorCategory.Forbidden => HttpStatusCode.Forbidden,
+                //ErrorCategory.Concurrency => HttpStatusCode.Conflict,
+                //ErrorCategory.TooManyRequests => (HttpStatusCode)429,
+                //ErrorCategory.ExternalService => HttpStatusCode.ServiceUnavailable,
                 _ => HttpStatusCode.InternalServerError
             };
         }

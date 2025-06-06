@@ -1,16 +1,17 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-
+using System.Linq;
 using System.Net;
+using Zentient.Results;
+using Zentient.Results.AspNetCore.Configuration;
+using Microsoft.Extensions.Options;
+using System.Collections.Generic;
 
 using Zentient.Results.AspNetCore;
 
-using Zentient.Results;
 using Zentient.Results.AspNetCore.Filters;
-using Zentient.Results.AspNetCore.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Zentient.Results.AspNetCore
 {
@@ -32,21 +33,28 @@ namespace Zentient.Results.AspNetCore
         /// <param name="configureZentientProblemDetails">An optional action to configure <see cref="ZentientProblemDetailsOptions"/>.</param>
         /// <returns>The <see cref="IServiceCollection"/> with Zentient.Results services added.</returns>
         public static IServiceCollection AddZentientResultsAspNetCore(
-                    this IServiceCollection services,
-                    Action<Microsoft.AspNetCore.Http.ProblemDetailsOptions>? configureMvcProblemDetails = null,
-                    Action<ZentientProblemDetailsOptions>? configureZentientProblemDetails = null)
+            this IServiceCollection services,
+            Action<Microsoft.AspNetCore.Http.ProblemDetailsOptions>? configureMvcProblemDetails = null,
+            Action<ZentientProblemDetailsOptions>? configureZentientProblemDetails = null)
         {
             services.AddOptions<ZentientProblemDetailsOptions>()
-                    .Configure(options =>
-                    { });
+                    .Configure(options => { });
 
             if (configureZentientProblemDetails != null)
             {
                 services.Configure(configureZentientProblemDetails);
             }
 
-            services.AddSingleton<ProblemDetailsFactory, DefaultProblemDetailsFactory>();
             services.AddHttpContextAccessor();
+
+            if (!services.Any(sd => sd.ServiceType == typeof(ProblemDetailsFactory)))
+            {
+#if NET9_0_OR_GREATER
+                services.AddSingleton<ProblemDetailsFactory, DefaultProblemDetailsFactory>();
+#else
+                services.AddSingleton<ProblemDetailsFactory>();
+#endif
+            }
 
             services.PostConfigure<ApiBehaviorOptions>(options =>
             {
@@ -68,7 +76,7 @@ namespace Zentient.Results.AspNetCore
                     }
 
                     var problemTypeBaseUri = zentientOptions.Value?.ProblemTypeBaseUri
-                        ?? "https://default.com/errors/fallback/";
+                        ?? ZentientResultsExtensions.ProblemDetailsExtensions.FallbackProblemDetailsBaseUri;
                     var problemDetails = result.ToProblemDetails(problemDetailsFactory, context.HttpContext, problemTypeBaseUri);
 
                     return new ObjectResult(problemDetails)
