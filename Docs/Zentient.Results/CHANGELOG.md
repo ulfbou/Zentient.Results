@@ -1,28 +1,42 @@
+Here's the updated changelog for Zentient.Results 0.3.0:
+
 # Zentient.Results Changelog
 
-## Version 0.3.0 (Current release)
+---
 
-This release focuses on strengthening error handling, enhancing integration with ASP.NET Core's Problem Details standard, and refining internal consistency within `Zentient.Results`.
+## Version 0.3.0 (Current Release)
+
+This release significantly enhances error handling capabilities, strengthens JSON serialization, and introduces robust integration points for ASP.NET Core's Problem Details standard, along with other internal refinements.
 
 ### ✨ Features & Enhancements
 
 * **Improved ErrorInfo Structure:**
-    * Added a `Detail` property to `ErrorInfo` for more descriptive error information, aligning with Problem Details specification.
+    * Added a `Detail` property to `ErrorInfo` for more descriptive error information, aligning with the Problem Details specification.
     * Introduced an `Extensions` dictionary to `ErrorInfo`, allowing for custom, non-standard error properties to be included, enhancing flexibility and diagnostic capabilities.
     * Modified `ErrorInfo` constructors to accept these new properties, providing more comprehensive error creation options.
     * Switched `InnerErrors` to `IReadOnlyList<ErrorInfo>` and `Extensions` to `IReadOnlyDictionary<string, object?>` for immutability and consistency.
-* **Enhanced Problem Details Integration:**
-    * Introduced a new **`ProblemDetails`** error category (`ErrorCategory.ProblemDetails`) to explicitly classify errors stemming from RFC 7807 Problem Details.
-    * Added an `internal static IResult Problem(ProblemDetails problemDetails)` factory method to `Result`, enabling direct conversion of ASP.NET Core `ProblemDetails` instances into `Zentient.Results.IResult` failures. This streamlines mapping external problem details into your application's result flow.
-    * Included necessary framework references (`Microsoft.AspNetCore.Mvc`, `Microsoft.AspNetCore.Mvc.Infrastructure`) in `Zentient.Results.csproj` to support `ProblemDetails` types directly within the core library.
+    * The `InternalServerError` member within the `ErrorCategory` enum now explicitly includes the `[EnumMember(Value = "internal_server_error")]` attribute for consistent serialization.
+    * **New `ProblemDetails` Error Category**: Introduced `ErrorCategory.ProblemDetails` to explicitly classify errors stemming from RFC 7807 Problem Details.
+
+* **Enhanced JSON Serialization and Deserialization:**
+    * The `ResultJsonConverter` has been substantially improved to provide a more comprehensive and robust JSON handling experience.
+    * **Explicit Property Serialization**: The `Write` methods for both `Result` and `Result<T>` now explicitly ensure that **all critical public properties**, including `IsSuccess`, `IsFailure`, `Status`, `Messages` (if present), `Errors` (if present), and `Value` (for `Result<T>`), are serialized to the JSON output. This guarantees a complete and consistent representation of the result state in JSON.
+    * **Robust Deserialization**: The `Read` methods within `ResultNonGenericJsonConverter` and `ResultGenericJsonConverter<TValue>` have been strengthened. If the `Status` property is missing or cannot be deserialized, the converter will now **default to `ResultStatuses.Error`** and inject a descriptive `ErrorInfo` indicating a deserialization issue. This prevents malformed results and provides immediate feedback on data inconsistencies, making deserialization more fault-tolerant.
+
 * **New HTTP Status Code for Request Timeout:**
     * Added `RequestTimeout` (HTTP 408) to `Constants.Code` and `Constants.Description`, along with a corresponding `ResultStatuses.RequestTimeout` static instance, providing more granular control over timeout-related error reporting.
+
 * **Refined Exception Handling:**
     * Updated `FromException` factory methods in `Result` and `Result<T>` to correctly pass the `Exception` object as `data` to the `ErrorInfo` constructor.
+
+* **ASP.NET Core Problem Details Integration:**
+    * Added an `internal static IResult Problem(ProblemDetails problemDetails)` factory method to `Result` within a `#if PROBLEM_DETAILS` conditional compilation block. This enables direct conversion of ASP.NET Core `ProblemDetails` instances (including `ValidationProblemDetails` and its `Errors` dictionary) into `Zentient.Results.IResult` failures, streamlining mapping external problem details into your application's result flow.
+    * Introduced `ResultStatus.FromHttpStatusCode(int statusCode)` to simplify creating or retrieving `IResultStatus` from an integer HTTP status code.
+
 * **General Code Improvements:**
     * Corrected the `ResultStatuses.Forbidden` description to accurately reflect "Forbidden."
     * Adjusted `Result<T>.Failure` factory method to ensure `errors` are not null or empty before creating a failure result.
-    * Updated the project description in `Zentient.Results.csproj` to indicate compatibility with **.NET 6+**.
+    * Updated the project description in `Zentient.Results.csproj` to indicate compatibility with **.NET 6-9**.
     * Streamlined JSON serialization logic within `ResultJsonConverter` for `ErrorInfo` to pass `data` and `innerErrors` explicitly.
 
 ---
@@ -70,3 +84,5 @@ This is the inaugural release of the Zentient.Results library, providing a robus
 * **`ResultJsonConverter`**: Custom `JsonConverterFactory` to enable proper JSON serialization and deserialization of `Result` and `Result<T>` types, ensuring `IsSuccess`, `IsFailure`, `Status`, `Messages`, `Errors`, and `Value` (for `Result<T>`) are correctly handled.
 * **`ResultStatuses` Class**: A static class providing a comprehensive collection of predefined `IResultStatus` instances, largely mapping to standard HTTP status codes (e.g., `Success` (200), `Created` (201), `BadRequest` (400), `Unauthorized` (401), `NotFound` (404), `InternalError` (500)).
 * **`ResultStatusExtensions`**: An extension method `ToHttpStatusCode()` for converting an `IResultStatus` to its integer HTTP status code.
+
+**Last Updated:** 2025-06-07 **Version:** 0.3.0
