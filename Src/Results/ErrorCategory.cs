@@ -63,9 +63,14 @@ namespace Zentient.Results
 
         /// <summary>An error related to business logic, such as validation against business rules.</summary>
         [EnumMember(Value = "business_logic")] BusinessLogic,
-        ServiceUnavailable,
 
-        /// <summary>An error indicating that the server encountered an unexpected condition that prevented it from fulfilling the request.</summary>
-        [EnumMember(Value = "internal_server_error")] InternalServerError
+        /// <summary>An error indicating that the service is unavailable.</summary>
+        [EnumMember(Value = "service_unavailable")] ServiceUnavailable,
+
+        /// <summary>An error related to an internal server issue.</summary>
+        [EnumMember(Value = "service_unavailable")] InternalServerError,
+
+        /// <summary>An error related to a problem with the API or service itself.</summary>
+        [EnumMember(Value = "problem_details")] ProblemDetails
     }
 }

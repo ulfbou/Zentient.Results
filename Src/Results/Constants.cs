@@ -16,6 +16,7 @@
             public const int Forbidden = 403;
             public const int NotFound = 404;
             public const int MethodNotAllowed = 405;
+            public const int RequestTimeout = 408;
             public const int Conflict = 409;
             public const int Gone = 410;
             public const int PreconditionFailed = 412;
@@ -26,9 +27,7 @@
             public const int ServiceUnavailable = 503;
         }
 
-        /// <summary>
-        /// Contains string constants representing standard HTTP status descriptions.
-        /// </summary>
+        /// <summary>Contains string constants representing standard HTTP status descriptions.</summary>
         internal static class Description
         {
             public const string Ok = "OK";
@@ -41,6 +40,7 @@
             public const string Forbidden = "Forbidden";
             public const string NotFound = "Not Found";
             public const string MethodNotAllowed = "Method Not Allowed";
+            public const string RequestTimeout = "Request Timeout";
             public const string Conflict = "Conflict";
             public const string Gone = "Gone";
             public const string PreconditionFailed = "Precondition Failed";
