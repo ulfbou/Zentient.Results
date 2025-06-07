@@ -11,7 +11,7 @@ The easiest way to add Zentient.Results to your project is via NuGet Package Man
 Open your terminal or command prompt and navigate to your project directory. Then, run the following command:
 
 ```bash
-dotnet add package Zentient.Results
+dotnet add package Zentient.Results --version 0.3.0
 ```
 
 ### Using NuGet Package Manager Console
@@ -19,7 +19,7 @@ dotnet add package Zentient.Results
 In Visual Studio, open the NuGet Package Manager Console (`Tools` > `NuGet Package Manager` > `Package Manager Console`) and execute:
 
 ```powershell
-Install-Package Zentient.Results
+Install-Package Zentient.Results --Version 0.3.0
 ```
 
 ### Using Visual Studio's NuGet Package Manager UI
