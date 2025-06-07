@@ -12,4 +12,8 @@
 		<Content Include="Zentient.Results.AspNetCore\**\*.md" />
 		<Content Include="Zentient.Utilities\**\*.md" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Zentient.Results\Articles\" />
+	</ItemGroup>
 </Project>

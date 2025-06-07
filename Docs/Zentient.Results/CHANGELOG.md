@@ -1,8 +1,33 @@
-# Changelog
+# Zentient.Results Changelog
+
+## Version 0.3.0 (Current release)
+
+This release focuses on strengthening error handling, enhancing integration with ASP.NET Core's Problem Details standard, and refining internal consistency within `Zentient.Results`.
+
+### ✨ Features & Enhancements
+
+* **Improved ErrorInfo Structure:**
+    * Added a `Detail` property to `ErrorInfo` for more descriptive error information, aligning with Problem Details specification.
+    * Introduced an `Extensions` dictionary to `ErrorInfo`, allowing for custom, non-standard error properties to be included, enhancing flexibility and diagnostic capabilities.
+    * Modified `ErrorInfo` constructors to accept these new properties, providing more comprehensive error creation options.
+    * Switched `InnerErrors` to `IReadOnlyList<ErrorInfo>` and `Extensions` to `IReadOnlyDictionary<string, object?>` for immutability and consistency.
+* **Enhanced Problem Details Integration:**
+    * Introduced a new **`ProblemDetails`** error category (`ErrorCategory.ProblemDetails`) to explicitly classify errors stemming from RFC 7807 Problem Details.
+    * Added an `internal static IResult Problem(ProblemDetails problemDetails)` factory method to `Result`, enabling direct conversion of ASP.NET Core `ProblemDetails` instances into `Zentient.Results.IResult` failures. This streamlines mapping external problem details into your application's result flow.
+    * Included necessary framework references (`Microsoft.AspNetCore.Mvc`, `Microsoft.AspNetCore.Mvc.Infrastructure`) in `Zentient.Results.csproj` to support `ProblemDetails` types directly within the core library.
+* **New HTTP Status Code for Request Timeout:**
+    * Added `RequestTimeout` (HTTP 408) to `Constants.Code` and `Constants.Description`, along with a corresponding `ResultStatuses.RequestTimeout` static instance, providing more granular control over timeout-related error reporting.
+* **Refined Exception Handling:**
+    * Updated `FromException` factory methods in `Result` and `Result<T>` to correctly pass the `Exception` object as `data` to the `ErrorInfo` constructor.
+* **General Code Improvements:**
+    * Corrected the `ResultStatuses.Forbidden` description to accurately reflect "Forbidden."
+    * Adjusted `Result<T>.Failure` factory method to ensure `errors` are not null or empty before creating a failure result.
+    * Updated the project description in `Zentient.Results.csproj` to indicate compatibility with **.NET 6+**.
+    * Streamlined JSON serialization logic within `ResultJsonConverter` for `ErrorInfo` to pass `data` and `innerErrors` explicitly.
 
 ---
 
-## Version 0.2.0 (Current Release)
+## Version 0.2.0 (Previous Release)
 
 This release introduces significant enhancements to the `Zentient.Results` library, focusing on improved consistency, robustness, and internal clarity. Key updates include renaming `DefaultResultStatus` for better alignment, refining the `ErrorInfo` message retrieval, and enhancing the `Result<T>` structure for more explicit value handling.
 
