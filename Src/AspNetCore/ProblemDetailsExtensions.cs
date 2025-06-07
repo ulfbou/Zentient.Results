@@ -44,8 +44,8 @@ namespace Zentient.Results.AspNetCore
             this Zentient.Results.IResult result,
             ProblemDetailsFactory factory,
             HttpContext httpContext,
-            ZentientProblemDetailsOptions options, // Pass options directly
-            string? instance = null) // Add optional instance parameter
+            ZentientProblemDetailsOptions options,
+            string? instance = null)
         {
             ArgumentNullException.ThrowIfNull(factory, nameof(factory));
             ArgumentNullException.ThrowIfNull(httpContext, nameof(httpContext));

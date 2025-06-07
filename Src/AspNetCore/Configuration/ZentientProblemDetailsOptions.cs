@@ -15,11 +15,19 @@ namespace Zentient.Results.AspNetCore.Configuration
         /// </summary>
         public string ProblemTypeBaseUri { get; set; } = FallbackProblemDetailsBaseUri;
 
+        // Use about:blank as defined in RFC 9457
+
         /// <summary>
         /// The default fallback base URI for problem types, adhering to a common
         /// practice of providing a URI where problem type documentation might be found.
         /// </summary>
-        public const string FallbackProblemDetailsBaseUri = "https://errors.zentient.dev/";
+        /// <remarks>
+        /// This is set to "about:blank" by default, which is a placeholder URI as defined
+        /// in RFC 9457. It is used when no specific base URI is provided.
+        /// This allows Zentient to generate problem details without requiring a specific
+        /// problem type base URI to be configured.
+        /// </remarks>
+        public const string FallbackProblemDetailsBaseUri = "about:blank";
 
         /// <summary>
         /// Gets or sets a value indicating whether standard ASP.NET Core MVC model
