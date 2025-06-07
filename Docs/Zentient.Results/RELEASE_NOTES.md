@@ -1,6 +1,6 @@
 # Zentient.Results Release Notes
 
-## Version 0.1.0 - May 28, 2025
+## Version 0.1.0 - May 22, 2025
 
 We are thrilled to announce the official release of **Zentient.Results**, a foundational library designed to streamline the handling of operation outcomes in .NET applications. This initial stable version provides a robust and intuitive way to represent success and failure states, promoting clearer code, improved error handling, and more predictable application behavior.
 
