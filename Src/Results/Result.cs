@@ -2,11 +2,16 @@
 using System.Net;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
-
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
+using System.Linq;
+using System.Collections.Generic;
 
 using Zentient.Utilities;
+
+#if NET8_0_OR_GREATER
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+#endif
 
 namespace Zentient.Results
 {
@@ -237,6 +242,7 @@ namespace Zentient.Results
         public static IResult<T> FromException<T>(Exception ex, IResultStatus? status = null) =>
             Result<T>.Failure(default, new ErrorInfo(ErrorCategory.Exception, ex.GetType().Name, ex.Message, data: ex), status ?? ResultStatuses.Error);
 
+#if PROBLEM_DETAILS
         /// <summary>
         /// Creates a failure <see cref="IResult"/> from a <see cref="ProblemDetails"/> instance.
         /// The resulting <see cref="IResult"/>'s status will dynamically reflect the
@@ -304,6 +310,7 @@ namespace Zentient.Results
 
             return new Result(status, null, new[] { mainErrorInfo });
         }
+#endif // PROBLEM_DETAILS
 
         /// <inheritdoc />
         public override string ToString()

@@ -34,10 +34,10 @@
 		<DefineConstants>$(DefineConstants);NET7_0_OR_GREATER</DefineConstants>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
-		<DefineConstants>$(DefineConstants);NET8_0_OR_GREATER</DefineConstants>
+		<DefineConstants>$(DefineConstants);NET8_0_OR_GREATER;PROBLEM_DETAILS</DefineConstants>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(TargetFramework)' == 'net9.0'">
-		<DefineConstants>$(DefineConstants);NET9_0_OR_GREATER;NET8_0_OR_GREATER</DefineConstants>
+		<DefineConstants>$(DefineConstants);NET9_0_OR_GREATER;NET8_0_OR_GREATER;PROBLEM_DETAILS</DefineConstants>
 	</PropertyGroup>
 
 	<!-- Documentation -->

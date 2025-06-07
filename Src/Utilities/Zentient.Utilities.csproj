@@ -11,7 +11,7 @@
 		<Title>Zentient.Utilities</Title>
 		<Authors>Ulf Bourelius</Authors>
 		<Company>Ulf Bourelius</Company>
-		<Description>A set of utility classes for .NET 9.</Description>
+		<Description>A set of utility classes for .NET 6-9.</Description>
 		<Copyright>Copyright © 2025 Ulf Bourelius</Copyright>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageProjectUrl>https://github.com/ulfbou/Zentient</PackageProjectUrl>
