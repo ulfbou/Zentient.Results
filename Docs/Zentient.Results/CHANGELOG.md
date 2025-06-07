@@ -2,7 +2,32 @@
 
 ---
 
-## Version 0.2.0 (Current Release)
+## Version 0.3.0 (Current release)
+
+This release introduces focused refinements to the Zentient.Results library. Key updates include a serialization-specific attribute addition for `ErrorCategory`, significant improvements to the `ResultJsonConverter` for more robust and comprehensive JSON serialization and deserialization, and a minor correction to a predefined result status description. These changes aim to enhance the predictability and reliability of result handling, particularly in data exchange scenarios.
+
+---
+
+## Features & Enhancements
+
+### Error Categorization Refinement
+
+* **`ErrorCategory.InternalServerError` with `EnumMember` Attribute**: The `InternalServerError` member within the `ErrorCategory` enum now explicitly includes the `[EnumMember(Value = "internal_server_error")]` attribute. This ensures consistent and correct string representation during serialization, particularly when using data contracts or JSON serialization, improving interoperability.
+
+### Enhanced JSON Serialization and Deserialization
+
+The `ResultJsonConverter` has received substantial updates to provide a more comprehensive and robust JSON handling experience for `Result` and `Result<T>` types:
+
+* **Explicit Property Serialization**: The `Write` methods for both `Result` and `Result<T>` now explicitly ensure that **all critical public properties**, including `IsSuccess`, `IsFailure`, `Status`, `Messages` (if present), `Errors` (if present), and `Value` (for `Result<T>`), are serialized to the JSON output. This guarantees a complete and consistent representation of the result state in JSON.
+* **Improved Deserialization Robustness**: The `Read` methods within `ResultNonGenericJsonConverter` and `ResultGenericJsonConverter<TValue>` have been strengthened. If the `Status` property is missing or cannot be deserialized, the converter will now **default to `ResultStatuses.Error`** and inject a descriptive `ErrorInfo` indicating a deserialization issue. This prevents malformed results and provides immediate feedback on data inconsistencies, making deserialization more fault-tolerant.
+
+### Result Status Description Correction
+
+* **Corrected `ResultStatuses.Forbidden` Description**: The predefined `ResultStatuses.Forbidden` now accurately uses "Forbidden" as its description, aligning with the standard HTTP status code semantics, rather than the previous "Bad Request."
+
+---
+
+## Version 0.2.0 (Previous  Release)
 
 This release introduces significant enhancements to the `Zentient.Results` library, focusing on improved consistency, robustness, and internal clarity. Key updates include renaming `DefaultResultStatus` for better alignment, refining the `ErrorInfo` message retrieval, and enhancing the `Result<T>` structure for more explicit value handling.
 
@@ -45,3 +70,10 @@ This is the inaugural release of the Zentient.Results library, providing a robus
 * **`ResultJsonConverter`**: Custom `JsonConverterFactory` to enable proper JSON serialization and deserialization of `Result` and `Result<T>` types, ensuring `IsSuccess`, `IsFailure`, `Status`, `Messages`, `Errors`, and `Value` (for `Result<T>`) are correctly handled.
 * **`ResultStatuses` Class**: A static class providing a comprehensive collection of predefined `IResultStatus` instances, largely mapping to standard HTTP status codes (e.g., `Success` (200), `Created` (201), `BadRequest` (400), `Unauthorized` (401), `NotFound` (404), `InternalError` (500)).
 * **`ResultStatusExtensions`**: An extension method `ToHttpStatusCode()` for converting an `IResultStatus` to its integer HTTP status code.
+
+This document serves as a foundational guide for understanding the architectural principles and components of `Zentient.Results`. It is intended to evolve alongside the library, reflecting changes and enhancements in future releases. For more detailed usage examples and API documentation, please refer to the [README.md](README.md) and the [Zentient.Results API documentation](https://github.com/ulfbou/Zentient.Results/wiki).
+
+```
+Last Updated: 2025-06-07
+Version: 0.3.0
+```
