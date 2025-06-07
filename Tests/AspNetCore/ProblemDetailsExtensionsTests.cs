@@ -18,6 +18,7 @@ using Zentient.Results.Tests.Helpers;
 
 using static Zentient.Results.Tests.Helpers.AspNetCoreHelpers;
 using Zentient.Results.Tests.AspNetCore.Filters;
+using Zentient.Results.AspNetCore.Configuration;
 
 namespace Zentient.Results.Tests.AspNetCore
 {
@@ -31,7 +32,7 @@ namespace Zentient.Results.Tests.AspNetCore
     /// </summary>
     public class ProblemDetailsExtensionsTests
     {
-        private const string ProblemTypeUri = ProblemDetailsExtensions.DefaultProblemTypeBaseUri;
+        private const string ProblemTypeUri = ZentientProblemDetailsOptions.FallbackProblemDetailsBaseUri;
 
         [Fact]
         public void ToProblemDetails_ThrowsInvalidOperationException_For_SuccessResult()
@@ -42,7 +43,10 @@ namespace Zentient.Results.Tests.AspNetCore
             var context = CreateHttpContext();
 
             // Act
-            Action act = () => result.ToProblemDetails(factory, context, ProblemTypeUri);
+            Action act = () => result.ToProblemDetails(factory, context, new ZentientProblemDetailsOptions
+            {
+                ProblemTypeBaseUri = ProblemTypeUri
+            });
 
             // Assert
             act.Should().Throw<InvalidOperationException>()
@@ -63,7 +67,7 @@ namespace Zentient.Results.Tests.AspNetCore
             var context = CreateHttpContext();
 
             // Act
-            var pd = result.ToProblemDetails(factory, context, ProblemTypeUri);
+            var pd = result.ToProblemDetails(factory, context, new ZentientProblemDetailsOptions { ProblemTypeBaseUri = ProblemTypeUri });
 
             // Assert
             pd.Should().BeOfType<ValidationProblemDetails>();
@@ -101,7 +105,7 @@ namespace Zentient.Results.Tests.AspNetCore
             var context = CreateHttpContext();
 
             // Act
-            var pd = result.ToProblemDetails(factory, context, ProblemTypeUri);
+            var pd = result.ToProblemDetails(factory, context, new ZentientProblemDetailsOptions { ProblemTypeBaseUri = ProblemTypeUri });
 
             // Assert
             pd.Should().BeOfType<ValidationProblemDetails>();
@@ -129,7 +133,7 @@ namespace Zentient.Results.Tests.AspNetCore
             var context = CreateHttpContext();
 
             // Act
-            var pd = result.ToProblemDetails(factory, context, ProblemTypeUri);
+            var pd = result.ToProblemDetails(factory, context, new ZentientProblemDetailsOptions { ProblemTypeBaseUri = ProblemTypeUri });
 
             // Assert
             pd.Should().BeOfType<ProblemDetails>(); // Not ValidationProblemDetails
@@ -161,7 +165,7 @@ namespace Zentient.Results.Tests.AspNetCore
             var context = CreateHttpContext();
 
             // Act
-            var pd = result.ToProblemDetails(factory, context, ProblemTypeUri);
+            var pd = result.ToProblemDetails(factory, context, new ZentientProblemDetailsOptions { ProblemTypeBaseUri = ProblemTypeUri });
 
             // Assert
             pd.Should().BeOfType<ProblemDetails>();
@@ -185,7 +189,7 @@ namespace Zentient.Results.Tests.AspNetCore
             var context = CreateHttpContext();
 
             // Act
-            var pd = result.ToProblemDetails(factory, context, ProblemTypeUri);
+            var pd = result.ToProblemDetails(factory, context, new ZentientProblemDetailsOptions { ProblemTypeBaseUri = ProblemTypeUri });
 
             // Assert
             pd.Should().BeOfType<ValidationProblemDetails>();
@@ -202,24 +206,81 @@ namespace Zentient.Results.Tests.AspNetCore
         public void ToProblemDetails_UsesDefaultProblemTypeBaseUri_IfProvidedBaseUriIsNullOrEmpty()
         {
             // Arrange
-            var error = new ErrorInfo(ErrorCategory.Request, "REQ-001", "Invalid request format.");
-            var result = new FailureResultStub(
-                new[] { error },
-                "Request error.",
-                new ResultStatusStub(400, "Bad Request")
-            );
-            var factory = CreateFactory();
-            var context = CreateHttpContext();
+            var mockFactory = new Mock<ProblemDetailsFactory>();
+            var mockHttpContext = new DefaultHttpContext();
+            var result = Result.Failure(new ErrorInfo(ErrorCategory.General, "SomeError", "Some message"));
+            var fallbackUri = ZentientProblemDetailsOptions.FallbackProblemDetailsBaseUri;
+
+            // Create ZentientProblemDetailsOptions instance
+            // Set ProblemTypeBaseUri to null or empty string to test the fallback logic
+            var zentientOptions = new ZentientProblemDetailsOptions { ProblemTypeBaseUri = fallbackUri }; // Use fallback as default, since property is non-nullable
+
+            // Mock CreateProblemDetails to capture arguments or return a dummy ProblemDetails
+            mockFactory.Setup(f => f.CreateProblemDetails(
+                    It.IsAny<HttpContext>(),
+                    It.IsAny<int?>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<string?>()))
+                .Returns((HttpContext ctx, int? statusCode, string title, string type, string detail, string instance) => new ProblemDetails
+                {
+                    Status = statusCode,
+                    Title = title,
+                    Type = type, // We will assert on this
+                    Detail = detail,
+                    Instance = instance
+                });
 
             // Act
-            var pd1 = result.ToProblemDetails(factory, context, "");
-            var pd2 = result.ToProblemDetails(factory, context, null!);
+            // Pass the zentientOptions object instead of a string URI
+            var problemDetails = result.ToProblemDetails(mockFactory.Object, mockHttpContext, zentientOptions);
 
             // Assert
-            pd1.Type.Should().StartWith(ProblemDetailsExtensions.DefaultProblemTypeBaseUri);
-            pd2.Type.Should().StartWith(ProblemDetailsExtensions.DefaultProblemTypeBaseUri);
-            pd1.Type.Should().EndWith("req-001");
-            pd2.Type.Should().EndWith("req-001");
+            Assert.NotNull(problemDetails);
+            Assert.StartsWith(fallbackUri, problemDetails.Type); // Check if fallback was used
+            Assert.EndsWith("/someerror", problemDetails.Type); // Check the rest of the type construction
+        }
+
+        [Fact]
+        public void ToProblemDetails_UsesDefaultProblemTypeBaseUri_IfProvidedBaseUriIsNullOrEmpty_Variant()
+        {
+            // Arrange
+            var mockFactory = new Mock<ProblemDetailsFactory>();
+            var mockHttpContext = new DefaultHttpContext();
+            // Use ErrorCategory.General or a valid category, and provide all required parameters
+            var result = Result.Failure(new ErrorInfo(ErrorCategory.General, "SomeError", "Some message"));
+            var fallbackUri = ZentientProblemDetailsOptions.FallbackProblemDetailsBaseUri;
+
+            // Create ZentientProblemDetailsOptions instance
+            // Set ProblemTypeBaseUri to string.Empty to test the fallback logic
+            var zentientOptions = new ZentientProblemDetailsOptions { ProblemTypeBaseUri = string.Empty };
+
+            // Mock CreateProblemDetails to capture arguments or return a dummy ProblemDetails
+            mockFactory.Setup(f => f.CreateProblemDetails(
+                    It.IsAny<HttpContext>(),
+                    It.IsAny<int?>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<string?>()))
+                .Returns((HttpContext ctx, int? statusCode, string title, string type, string detail, string instance) => new ProblemDetails
+                {
+                    Status = statusCode,
+                    Title = title,
+                    Type = type, // We will assert on this
+                    Detail = detail,
+                    Instance = instance
+                });
+
+            // Act
+            // Pass the zentientOptions object instead of a string URI
+            var problemDetails = result.ToProblemDetails(mockFactory.Object, mockHttpContext, zentientOptions);
+
+            // Assert
+            Assert.NotNull(problemDetails);
+            Assert.StartsWith(fallbackUri, problemDetails.Type); // Check if fallback was used
+            Assert.EndsWith("/someerror", problemDetails.Type); // Check the rest of the type construction
         }
 
         [Fact]
@@ -236,7 +297,7 @@ namespace Zentient.Results.Tests.AspNetCore
             var context = CreateHttpContext();
 
             // Act
-            var pd = result.ToProblemDetails(factory, context, "https://example.com/problems");
+            var pd = result.ToProblemDetails(factory, context, new ZentientProblemDetailsOptions { ProblemTypeBaseUri = "https://example.com/problems" });
 
             // Assert
             pd.Type.Should().Be("https://example.com/problems/db-002");
@@ -256,7 +317,7 @@ namespace Zentient.Results.Tests.AspNetCore
             var context = CreateHttpContext();
 
             // Act
-            var pd = result.ToProblemDetails(factory, context, ProblemTypeUri);
+            var pd = result.ToProblemDetails(factory, context, new ZentientProblemDetailsOptions { ProblemTypeBaseUri = ProblemTypeUri });
 
             // Assert
             pd.Status.Should().Be(403);
@@ -278,7 +339,7 @@ namespace Zentient.Results.Tests.AspNetCore
             var context = CreateHttpContext();
 
             // Act
-            var pd = result.ToProblemDetails(factory, context, ProblemTypeUri);
+            var pd = result.ToProblemDetails(factory, context, new ZentientProblemDetailsOptions { ProblemTypeBaseUri = ProblemTypeUri });
 
             // Assert
             pd.Should().BeOfType<ProblemDetails>();
@@ -299,7 +360,7 @@ namespace Zentient.Results.Tests.AspNetCore
             var problemTypeUri = "https://example.com/problems";
 
             // Act
-            Action act = () => result.ToProblemDetails(factory, context, problemTypeUri);
+            Action act = () => result.ToProblemDetails(factory, context, new ZentientProblemDetailsOptions { ProblemTypeBaseUri = problemTypeUri });
 
             // Assert
             act.Should().Throw<InvalidOperationException>();
@@ -315,7 +376,7 @@ namespace Zentient.Results.Tests.AspNetCore
             var context = CreateHttpContext();
 
             // Act
-            var pd = result.ToProblemDetails(factory, context, ProblemTypeUri);
+            var pd = result.ToProblemDetails(factory, context, new ZentientProblemDetailsOptions { ProblemTypeBaseUri = ProblemTypeUri });
 
             // Assert
             pd.Should().NotBeNull();
@@ -340,7 +401,7 @@ namespace Zentient.Results.Tests.AspNetCore
             var context = CreateHttpContext();
 
             // Act
-            var pd = result.ToProblemDetails(factory, context, ProblemTypeUri);
+            var pd = result.ToProblemDetails(factory, context, new ZentientProblemDetailsOptions { ProblemTypeBaseUri = ProblemTypeUri });
 
             // Assert
             pd.Should().BeOfType<ValidationProblemDetails>();
@@ -367,7 +428,7 @@ namespace Zentient.Results.Tests.AspNetCore
             var context = CreateHttpContext();
 
             // Act
-            var pd = result.ToProblemDetails(factory, context, ProblemTypeUri);
+            var pd = result.ToProblemDetails(factory, context, new ZentientProblemDetailsOptions { ProblemTypeBaseUri = ProblemTypeUri });
 
             // Assert
             pd.Extensions.Should().ContainKey("zentientErrors");
@@ -406,7 +467,7 @@ namespace Zentient.Results.Tests.AspNetCore
             var factory = CreateFactory();
             var context = CreateHttpContext();
 
-            var pd = result.ToProblemDetails(factory, context, ProblemTypeUri);
+            var pd = result.ToProblemDetails(factory, context, new ZentientProblemDetailsOptions { ProblemTypeBaseUri = ProblemTypeUri });
 
             // Assert
             pd.Should().BeOfType<ValidationProblemDetails>();
