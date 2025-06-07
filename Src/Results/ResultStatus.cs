@@ -1,4 +1,6 @@
-﻿namespace Zentient.Results
+﻿using System.Net;
+
+namespace Zentient.Results
 {
     /// <summary>A default implementation of <see cref="IResultStatus"/> with a code and description.</summary>
     public readonly struct ResultStatus : IResultStatus, IEquatable<ResultStatus>
@@ -27,6 +29,17 @@
         /// <param name="description">The description for the custom status.</param>
         /// <returns>A new <see cref="ResultStatus"/> instance.</returns>
         public static ResultStatus Custom(int code, string description) => new(code, description);
+
+        /// <summary>Creates a <see cref="ResultStatus"/> from an HTTP status code.</summary>
+        /// <param name="statusCode">The HTTP status code to convert.</param>
+        /// <returns>A new <see cref="IResultStatus"/> instance representing the HTTP status code.</returns>
+        public static IResultStatus FromHttpStatusCode(int statusCode)
+        {
+            var httpStatusCode = (HttpStatusCode)statusCode;
+            string description = httpStatusCode.ToString();
+
+            return ResultStatuses.GetStatus(statusCode, description);
+        }
 
         /// <summary>
         /// Returns a string representation of the result status.

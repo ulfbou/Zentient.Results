@@ -14,9 +14,10 @@
         public static readonly IResultStatus BadRequest = new ResultStatus(Constants.Code.BadRequest, Constants.Description.BadRequest); // 400
         public static readonly IResultStatus Unauthorized = new ResultStatus(Constants.Code.Unauthorized, Constants.Description.Unauthorized); // 401
         public static readonly IResultStatus PaymentRequired = ResultStatus.Custom(Constants.Code.PaymentRequired, Constants.Description.PaymentRequired); // 402
-        public static readonly IResultStatus Forbidden = new ResultStatus(Constants.Code.Forbidden, Constants.Description.BadRequest); // 403
+        public static readonly IResultStatus Forbidden = new ResultStatus(Constants.Code.Forbidden, Constants.Description.Forbidden); // 403
         public static readonly IResultStatus NotFound = new ResultStatus(Constants.Code.NotFound, Constants.Description.NotFound); // 404
         public static readonly IResultStatus MethodNotAllowed = new ResultStatus(Constants.Code.MethodNotAllowed, Constants.Description.MethodNotAllowed); // 405
+        public static readonly IResultStatus RequestTimeout = new ResultStatus(Constants.Code.RequestTimeout, Constants.Description.RequestTimeout); // 408
         public static readonly IResultStatus Conflict = new ResultStatus(Constants.Code.Conflict, Constants.Description.Conflict); // 409
         public static readonly IResultStatus Gone = new ResultStatus(Constants.Code.Gone, Constants.Description.Gone); // 410
         public static readonly IResultStatus PreconditionFailed = new ResultStatus(Constants.Code.PreconditionFailed, Constants.Description.PreconditionFailed); // 412
@@ -41,6 +42,7 @@
                 { Constants.Code.Forbidden, Forbidden },
                 { Constants.Code.NotFound, NotFound },
                 { Constants.Code.MethodNotAllowed, MethodNotAllowed },
+                { Constants.Code.RequestTimeout, RequestTimeout },
                 { Constants.Code.Conflict, Conflict },
                 { Constants.Code.Gone, Gone },
                 { Constants.Code.PreconditionFailed, PreconditionFailed },
