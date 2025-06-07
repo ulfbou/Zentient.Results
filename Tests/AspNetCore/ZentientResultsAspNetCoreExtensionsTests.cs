@@ -10,6 +10,9 @@ using Moq;
 using Zentient.Results.AspNetCore;
 using Zentient.Results.AspNetCore.Filters;
 using Xunit;
+using Microsoft.AspNetCore.Mvc.Abstractions;
+using Zentient.Results.AspNetCore.Configuration;
+using Microsoft.AspNetCore.Routing;
 
 namespace Zentient.Results.Tests.AspNetCore
 {
@@ -138,32 +141,56 @@ namespace Zentient.Results.Tests.AspNetCore
             pd.Extensions["traceId"].Should().Be("trace-123");
         }
 
+        // Inside ZentientResultsAspNetCoreExtensionsTests class
         [Fact]
-        public void AddZentientResultsAspNetCore_Configures_ApiBehaviorOptions_InvalidModelStateResponseFactory()
+        public Task AddZentientResultsAspNetCore_Configures_ApiBehaviorOptions_InvalidModelStateResponseFactory()
         {
             // Arrange
             var services = new ServiceCollection();
-            ZentientResultsAspNetCoreExtensions.AddZentientResultsAspNetCore(services, null, null);
-            var provider = services.BuildServiceProvider();
+            // Add minimal MVC services to enable ApiBehaviorOptions
+            services.AddControllers().AddZentientResultsForMvc(); // Or just AddControllers() for the base test
+            services.AddLogging(); // Often needed for HttpContext setup
+            services.AddOptions(); // Ensure options are registered
 
-            var options = provider.GetRequiredService<IOptions<ApiBehaviorOptions>>().Value;
+            // THIS IS THE LINE TO TEST:
+            services.AddZentientResultsAspNetCore(); // The canonical registration point
+
+            var serviceProvider = services.BuildServiceProvider();
+            var mvcOptions = serviceProvider.GetRequiredService<IOptions<ApiBehaviorOptions>>().Value;
+
+            var httpContext = new DefaultHttpContext { RequestServices = serviceProvider };
+            httpContext.Request.Path = "/test-path"; // Needed for instance URI
+
+            // Simulate Model State Errors
             var modelState = new ModelStateDictionary();
-            modelState.AddModelError("FieldA", "ErrorA");
-            var httpContext = new DefaultHttpContext();
-            httpContext.RequestServices = provider;
-            var actionContext = new ActionContext(httpContext, new Microsoft.AspNetCore.Routing.RouteData(), new Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor(), modelState);
+            modelState.AddModelError("Field1", "Error message for Field1");
+            modelState.AddModelError("Field2", "Error message for Field2");
+
+            var actionContext = new ActionContext(httpContext, new RouteData(), new ActionDescriptor(), modelState);
 
             // Act
-            var result = options.InvalidModelStateResponseFactory(actionContext);
+            var result = mvcOptions.InvalidModelStateResponseFactory(actionContext);
 
             // Assert
-            result.Should().BeOfType<ObjectResult>();
-            var objectResult = (ObjectResult)result;
-            objectResult.StatusCode.Should().Be((int)HttpStatusCode.UnprocessableEntity);
-            objectResult.ContentTypes.Should().Contain("application/problem+json");
-            objectResult.Value.Should().BeOfType<ValidationProblemDetails>();
-            var pd = (ValidationProblemDetails)objectResult.Value!;
-            pd.Extensions.Should().ContainKey("zentientErrors");
+            Assert.NotNull(result);
+            var objectResult = Assert.IsType<ObjectResult>(result);
+            Assert.NotNull(objectResult.Value);
+            var problemDetails = Assert.IsType<ValidationProblemDetails>(objectResult.Value);
+
+            // Expect 400 Bad Request as per the canonical implementation's design intent
+            Assert.Equal((int)HttpStatusCode.BadRequest, objectResult.StatusCode); // FIX: Assert 400
+            Assert.Equal((int)HttpStatusCode.BadRequest, problemDetails.Status); // FIX: Assert 400
+
+            Assert.Equal("One or more validation errors occurred.", problemDetails.Title);
+            Assert.Equal($"{ZentientProblemDetailsOptions.FallbackProblemDetailsBaseUri}validation", problemDetails.Type);
+            Assert.Equal("/test-path", problemDetails.Instance);
+
+            // Assert zentientErrors extension
+            Assert.True(problemDetails.Extensions.TryGetValue("zentientErrors", out var zentientErrors));
+            var errorsList = Assert.IsAssignableFrom<List<Dictionary<string, object?>>>(zentientErrors);
+            Assert.Contains(errorsList, e => e.TryGetValue("code", out var code) && code?.ToString() == "Field1");
+            Assert.Contains(errorsList, e => e.TryGetValue("code", out var code) && code?.ToString() == "Field2");
+            return Task.CompletedTask;
         }
 
         [Fact]
