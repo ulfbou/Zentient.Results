@@ -34,13 +34,12 @@ namespace Zentient.Results.Tests.AspNetCore.Filters
             var resultDescription = ResultStatuses.BadRequest.Description;
             var resultErrorDetail = "Detailed error message.";
 
-            var result = new ConcreteResult
-            {
-                IsSuccess = false,
-                Status = new MockResultStatus(statusCode, resultDescription),
-                Errors = new List<ErrorInfo> { errorInfo },
-                Error = resultErrorDetail
-            };
+            var result = new ConcreteResult(
+                false,
+                new List<ErrorInfo> { errorInfo },
+                null!,
+                resultErrorDetail,
+                new MockResultStatus(statusCode, resultDescription));
 
             var pdf = new Mock<ProblemDetailsFactory>();
             pdf.Setup(x => x.CreateProblemDetails(
@@ -108,13 +107,13 @@ namespace Zentient.Results.Tests.AspNetCore.Filters
             var statusCode = (int)HttpStatusCode.InternalServerError;
             var resultDescription = "Internal Server Error";
             var resultErrorDetail = "An unhandled exception occurred.";
-            var result = new ConcreteResult
-            {
-                IsSuccess = false,
-                Status = new MockResultStatus(statusCode, resultDescription),
-                Errors = new List<ErrorInfo> { firstError },
-                Error = resultErrorDetail
-            };
+            var result = new ConcreteResult(
+                false,
+                new List<ErrorInfo> { firstError },
+                null!,
+                resultErrorDetail,
+                new MockResultStatus(statusCode, resultDescription)
+            );
 
             const string expectedProblemTypeBaseUri = "https://yourdomain.com/errors/";
             var expectedProblem = new ProblemDetails
@@ -207,13 +206,13 @@ namespace Zentient.Results.Tests.AspNetCore.Filters
             var resultDescription = httpStatusCode.ToString();
             var resultErrorDetail = "Generic error detail.";
 
-            var result = new ConcreteResult
-            {
-                IsSuccess = false,
-                Status = new MockResultStatus(statusCode, resultDescription),
-                Errors = new List<ErrorInfo> { errorInfo },
-                Error = resultErrorDetail
-            };
+            var result = new ConcreteResult(
+                false,
+                new List<ErrorInfo> { errorInfo },
+                null!,
+                resultErrorDetail,
+                new MockResultStatus(statusCode, resultDescription)
+            );
 
             var pdf = new Mock<ProblemDetailsFactory>();
             pdf.Setup(x => x.CreateProblemDetails(

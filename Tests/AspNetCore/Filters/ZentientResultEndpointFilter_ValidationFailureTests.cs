@@ -43,13 +43,13 @@ namespace Zentient.Results.Tests.AspNetCore.Filters
             var resultDescription = ResultStatuses.BadRequest.Description;
             var resultErrorDetail = "Validation failed.";
 
-            var result = new ConcreteResult
-            {
-                IsSuccess = false,
-                Status = new MockResultStatus(statusCode, resultDescription),
-                Errors = validationErrors,
-                Error = resultErrorDetail
-            };
+            var result = new ConcreteResult(
+                isSuccess: false,
+                errors: validationErrors,
+                messages: Array.Empty<string>(),
+                error: resultErrorDetail,
+                status: new MockResultStatus(statusCode, resultDescription)
+            );
 
             var expectedProblem = new ProblemDetails { Title = "Validation Failed", Status = statusCode };
             var pdf = new Mock<ProblemDetailsFactory>();
@@ -134,13 +134,13 @@ namespace Zentient.Results.Tests.AspNetCore.Filters
             var resultDescription = ResultStatuses.UnprocessableEntity.Description;
             var resultErrorDetail = "Request entity is unprocessable.";
 
-            var result = new ConcreteResult
-            {
-                IsSuccess = false,
-                Status = new MockResultStatus(statusCode, resultDescription),
-                Errors = Array.Empty<ErrorInfo>(),
-                Error = resultErrorDetail
-            };
+            var result = new ConcreteResult(
+                isSuccess: false,
+                errors: Array.Empty<ErrorInfo>(),
+                messages: Array.Empty<string>(),
+                error: resultErrorDetail,
+                status: new MockResultStatus(statusCode, resultDescription)
+            );
 
             var expectedProblem = new ProblemDetails { Title = "Request Error", Status = statusCode };
 

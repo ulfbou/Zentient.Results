@@ -1,5 +1,7 @@
 ﻿using FluentAssertions;
 
+using Microsoft.AspNetCore.Http.HttpResults;
+
 namespace Zentient.Results.Tests
 {
     public class ResultTTests
@@ -13,12 +15,6 @@ namespace Zentient.Results.Tests
             public string Description { get; set; } = string.Empty;
             public override string ToString() => $"{Code} {Description}";
         }
-
-        private static IResultStatus SuccessStatus => new DummyStatus { Code = 200, Description = "OK" };
-        private static IResultStatus CreatedStatus => new DummyStatus { Code = 201, Description = "Created" };
-        private static IResultStatus NoContentStatus => new DummyStatus { Code = 204, Description = "No Content" };
-        private static IResultStatus BadRequestStatus => new DummyStatus { Code = 400, Description = "Bad Request" };
-        private static IResultStatus ErrorStatus => new DummyStatus { Code = 500, Description = "Internal Server Error" };
 
         [Fact]
         public void Success_Factory_Creates_Successful_Result()
@@ -55,7 +51,7 @@ namespace Zentient.Results.Tests
         [Fact]
         public void Failure_Factory_Creates_Failure_Result()
         {
-            var result = Result<int>.Failure(0, SampleError, BadRequestStatus);
+            var result = Result<int>.Failure(0, SampleError, ResultStatuses.BadRequest);
             result.IsSuccess.Should().BeFalse();
             result.IsFailure.Should().BeTrue();
             result.Status.Code.Should().Be(400);
@@ -66,8 +62,8 @@ namespace Zentient.Results.Tests
         [Fact]
         public void Failure_Factory_Throws_On_NullOrEmpty_Errors()
         {
-            Action actNull = () => Result<int>.Failure(0, null!, BadRequestStatus);
-            Action actEmpty = () => Result<int>.Failure(0, Array.Empty<ErrorInfo>(), BadRequestStatus);
+            Action actNull = () => Result<int>.Failure(0, null!, ResultStatuses.BadRequest);
+            Action actEmpty = () => Result<int>.Failure(0, Array.Empty<ErrorInfo>(), ResultStatuses.BadRequest);
             actNull.Should().Throw<ArgumentNullException>();
             actEmpty.Should().Throw<ArgumentException>();
         }
@@ -114,7 +110,7 @@ namespace Zentient.Results.Tests
         [Fact]
         public void IsSuccess_True_If_Status_2xx_And_NoErrors()
         {
-            var result = new Result<int>(42, SuccessStatus);
+            var result = new Result<int>(42, ResultStatuses.Success);
             result.IsSuccess.Should().BeTrue();
             result.IsFailure.Should().BeFalse();
         }
@@ -122,7 +118,7 @@ namespace Zentient.Results.Tests
         [Fact]
         public void IsSuccess_False_If_Status_2xx_But_HasErrors()
         {
-            var result = new Result<int>(42, SuccessStatus, null, new[] { SampleError });
+            var result = new Result<int>(42, ResultStatuses.Success, null, new[] { SampleError });
             result.IsSuccess.Should().BeFalse();
             result.IsFailure.Should().BeTrue();
         }
@@ -130,7 +126,7 @@ namespace Zentient.Results.Tests
         [Fact]
         public void Error_Returns_First_Error_Message_Or_Null()
         {
-            var result = new Result<int>(0, BadRequestStatus, null, new[] { SampleError, new ErrorInfo(ErrorCategory.General, "E2", "Second") });
+            var result = new Result<int>(0, ResultStatuses.Success, null, new[] { SampleError, new ErrorInfo(ErrorCategory.General, "E2", "Second") });
             result.Error.Should().Be("Error message");
 
             var success = Result<int>.Success(1);
@@ -140,7 +136,7 @@ namespace Zentient.Results.Tests
         [Fact]
         public void Messages_And_Errors_Default_To_Empty()
         {
-            var result = new Result<int>(42, SuccessStatus, null, null);
+            var result = new Result<int>(42, ResultStatuses.Success, null, null);
             result.Messages.Should().BeEmpty();
             result.Errors.Should().BeEmpty();
         }
@@ -151,7 +147,7 @@ namespace Zentient.Results.Tests
             var success = Result<int>.Success(1, "yay");
             success.ToString().Should().Contain("Success").And.Contain("yay");
 
-            var failure = Result<int>.Failure(0, SampleError, BadRequestStatus);
+            var failure = Result<int>.Failure(0, SampleError, ResultStatuses.BadRequest);
             failure.ToString().Should().Contain("Failure").And.Contain("Error message");
         }
 
@@ -167,7 +163,7 @@ namespace Zentient.Results.Tests
         [Fact]
         public void Map_Propagates_Failure()
         {
-            var result = Result<int>.Failure(0, SampleError, BadRequestStatus);
+            var result = Result<int>.Failure(0, SampleError, ResultStatuses.BadRequest);
             var mapped = result.Map(i => i * 2);
             mapped.IsFailure.Should().BeTrue();
             mapped.Errors.Should().BeEquivalentTo(result.Errors);
@@ -185,7 +181,7 @@ namespace Zentient.Results.Tests
         [Fact]
         public void Bind_Propagates_Failure()
         {
-            var result = Result<int>.Failure(0, SampleError, BadRequestStatus);
+            var result = Result<int>.Failure(0, SampleError, ResultStatuses.BadRequest);
             var bound = result.Bind(i => Result<string>.Success($"Value: {i}"));
             bound.IsFailure.Should().BeTrue();
             bound.Errors.Should().BeEquivalentTo(result.Errors);
@@ -204,7 +200,7 @@ namespace Zentient.Results.Tests
         public void Tap_Does_Not_Execute_On_Failure()
         {
             int tapped = 0;
-            var result = Result<int>.Failure(0, SampleError, BadRequestStatus);
+            var result = Result<int>.Failure(0, SampleError, ResultStatuses.BadRequest);
             result.Tap(i => tapped = i);
             tapped.Should().Be(0);
         }
@@ -222,7 +218,7 @@ namespace Zentient.Results.Tests
         public void OnSuccess_Does_Not_Execute_On_Failure()
         {
             int called = 0;
-            var result = Result<int>.Failure(0, SampleError, BadRequestStatus);
+            var result = Result<int>.Failure(0, SampleError, ResultStatuses.BadRequest);
             result.OnSuccess(i => called = i);
             called.Should().Be(0);
         }
@@ -231,7 +227,7 @@ namespace Zentient.Results.Tests
         public void OnFailure_Executes_Action_On_Failure()
         {
             IReadOnlyList<ErrorInfo>? errors = null;
-            var result = Result<int>.Failure(0, SampleError, BadRequestStatus);
+            var result = Result<int>.Failure(0, SampleError, ResultStatuses.BadRequest);
             result.OnFailure(e => errors = e);
             errors.Should().BeEquivalentTo(result.Errors);
         }
@@ -252,7 +248,7 @@ namespace Zentient.Results.Tests
             var value = result.Match(i => i * 2, errs => -1);
             value.Should().Be(20);
 
-            var fail = Result<int>.Failure(0, SampleError, BadRequestStatus);
+            var fail = Result<int>.Failure(0, SampleError, ResultStatuses.BadRequest);
             var value2 = fail.Match(i => i * 2, errs => -1);
             value2.Should().Be(-1);
         }
@@ -267,7 +263,7 @@ namespace Zentient.Results.Tests
         [Fact]
         public void GetValueOrThrow_Throws_On_Failure()
         {
-            var result = Result<int>.Failure(0, SampleError, BadRequestStatus);
+            var result = Result<int>.Failure(0, SampleError, ResultStatuses.BadRequest);
             Action act = () => result.GetValueOrThrow();
             act.Should().Throw<InvalidOperationException>().WithMessage("*Error message*");
         }
@@ -275,7 +271,7 @@ namespace Zentient.Results.Tests
         [Fact]
         public void GetValueOrThrow_With_Message_Throws_On_Failure()
         {
-            var result = Result<int>.Failure(0, SampleError, BadRequestStatus);
+            var result = Result<int>.Failure(0, SampleError, ResultStatuses.BadRequest);
             Action act = () => result.GetValueOrThrow("custom");
             act.Should().Throw<InvalidOperationException>().WithMessage("custom");
         }
@@ -283,7 +279,7 @@ namespace Zentient.Results.Tests
         [Fact]
         public void GetValueOrThrow_With_Factory_Throws_On_Failure()
         {
-            var result = Result<int>.Failure(0, SampleError, BadRequestStatus);
+            var result = Result<int>.Failure(0, SampleError, ResultStatuses.BadRequest);
             Action act = () => result.GetValueOrThrow(() => new ApplicationException("fail"));
             act.Should().Throw<ApplicationException>().WithMessage("fail");
         }
@@ -294,7 +290,7 @@ namespace Zentient.Results.Tests
             var result = Result<int>.Success(123);
             result.GetValueOrDefault(999).Should().Be(123);
 
-            var fail = Result<int>.Failure(0, SampleError, BadRequestStatus);
+            var fail = Result<int>.Failure(0, SampleError, ResultStatuses.BadRequest);
             fail.GetValueOrDefault(999).Should().Be(999);
         }
 
@@ -304,7 +300,7 @@ namespace Zentient.Results.Tests
             foreach (ErrorCategory category in Enum.GetValues(typeof(ErrorCategory)))
             {
                 var error = new ErrorInfo(category, "CODE", "Message");
-                var result = Result<int>.Failure(0, error, BadRequestStatus);
+                var result = Result<int>.Failure(0, error, ResultStatuses.BadRequest);
                 result.Errors[0].Category.Should().Be(category);
             }
         }
@@ -313,7 +309,7 @@ namespace Zentient.Results.Tests
         public void Can_Handle_Empty_Strings_And_Null_Data()
         {
             var error = new ErrorInfo(ErrorCategory.General, "", "", null, null);
-            var result = Result<int>.Failure(0, error, BadRequestStatus);
+            var result = Result<int>.Failure(0, error, ResultStatuses.BadRequest);
             result.Errors[0].Code.Should().BeEmpty();
             result.Errors[0].Message.Should().BeEmpty();
             result.Errors[0].Data.Should().BeNull();

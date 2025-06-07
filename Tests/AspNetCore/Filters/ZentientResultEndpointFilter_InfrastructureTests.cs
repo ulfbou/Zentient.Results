@@ -33,13 +33,13 @@ namespace Zentient.Results.Tests.AspNetCore.Filters
         {
             // Arrange
             var errorInfo = new ErrorInfo(ErrorCategory.General, "ERR001", "Test error");
-            var result = new ConcreteResult
-            {
-                IsSuccess = false,
-                Status = new MockResultStatus((int)HttpStatusCode.InternalServerError, "Internal Server Error"),
-                Errors = new List<ErrorInfo> { errorInfo },
-                Error = errorInfo.Message
-            };
+            var result = new ConcreteResult(
+                false,
+                new List<ErrorInfo> { errorInfo },
+                null!,
+                errorInfo.Message,
+                new MockResultStatus((int)HttpStatusCode.InternalServerError, "Internal Server Error")
+            );
 
             var pdf = new Mock<ProblemDetailsFactory>();
             const string testProblemTypeBaseUri = "https://yourdomain.com/errors/";
@@ -98,13 +98,13 @@ namespace Zentient.Results.Tests.AspNetCore.Filters
         public async Task InvokeAsync_ProblemDetailsFactoryReturnsNull_ThrowsInvalidOperationException()
         {
             // Arrange
-            var result = new ConcreteResult
-            {
-                IsSuccess = false,
-                Status = new MockResultStatus((int)HttpStatusCode.InternalServerError, "Internal Server Error"),
-                Errors = new List<ErrorInfo> { new ErrorInfo(ErrorCategory.Exception, "EX001", "Simulated exception") },
-                Error = "Internal Server Error"
-            };
+            var result = new ConcreteResult(
+                false,
+                new List<ErrorInfo> { new ErrorInfo(ErrorCategory.Exception, "EX001", "Simulated exception") },
+                null!,
+                "Internal Server Error",
+                new MockResultStatus((int)HttpStatusCode.InternalServerError, "Internal Server Error")
+            );
 
             var pdf = new Mock<ProblemDetailsFactory>();
             pdf.Setup(x => x.CreateProblemDetails(

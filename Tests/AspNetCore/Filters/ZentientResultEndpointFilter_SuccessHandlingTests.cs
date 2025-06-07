@@ -149,11 +149,13 @@ namespace Zentient.Results.Tests.AspNetCore.Filters
         public async Task InvokeAsync_SuccessNonGenericResult_ReturnsExpectedHttpResult(int statusCode, System.Type expectedType)
         {
             // Arrange
-            var result = new ConcreteResult
-            {
-                IsSuccess = true,
-                Status = new MockResultStatus(statusCode)
-            };
+            var result = new ConcreteResult(
+    isSuccess: true,
+    errors: null,
+    messages: null,
+    error: null,
+    status: new MockResultStatus(statusCode)
+);
 
             var pdf = new Mock<ProblemDetailsFactory>();
             var sp = CreateServiceProvider(pdf);
