@@ -64,6 +64,8 @@ namespace Zentient.Results
         /// <summary>An error related to business logic, such as validation against business rules.</summary>
         [EnumMember(Value = "business_logic")] BusinessLogic,
         ServiceUnavailable,
-        InternalServerError
+
+        /// <summary>An error indicating that the server encountered an unexpected condition that prevented it from fulfilling the request.</summary>
+        [EnumMember(Value = "internal_server_error")] InternalServerError
     }
 }
