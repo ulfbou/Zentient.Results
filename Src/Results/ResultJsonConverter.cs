@@ -3,21 +3,28 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
-using System.Text.Json.Serialization; // For System.Text.Json compatibility
+using System.Text.Json.Serialization;
 
 namespace Zentient.Results
 {
-    // --- System.Text.Json Converter for IResult and IResult<TValue> ---
-    // This is crucial for proper serialization when Result/Result<TValue> are used in API responses.
-    // This converter will ensure that only the necessary properties are serialized,
-    // and it handles both success and failure states.
+    /// <summary>
+    /// A custom <see cref="JsonConverterFactory"/> for serializing and deserializing <see cref="IResult"/> and <see cref="IResult{T}"/> types.
+    /// Handles both generic and non-generic result types, including error and status information.
+    /// </summary>
     public class ResultJsonConverter : JsonConverterFactory
     {
+        /// <summary>Determines whether the specified type can be converted by this converter.</summary>
+        /// <param name="typeToConvert">The type to check for convertibility.</param>
+        /// <returns><c>true</c> if the type implements <see cref="IResult"/>; otherwise, <c>false</c>.</returns>
         public override bool CanConvert(Type typeToConvert)
         {
             return typeof(IResult).IsAssignableFrom(typeToConvert);
         }
 
+        /// <summary>Creates a <see cref="JsonConverter"/> for the specified type.</summary>
+        /// <param name="typeToConvert">The type to create a converter for.</param>
+        /// <param name="options">The serializer options.</param>
+        /// <returns>A <see cref="JsonConverter"/> instance for the type, or <c>null</c> if not supported.</returns>
         public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             if (typeToConvert.IsGenericType &&
@@ -41,16 +48,20 @@ namespace Zentient.Results
             return null;
         }
 
+        /// <summary>Handles serialization and deserialization for non-generic <see cref="Result"/> types.</summary>
         private class ResultNonGenericJsonConverter : JsonConverter<Result>
         {
             private readonly JsonSerializerOptions _options;
 
+            /// <summary>Initializes a new instance of the <see cref="ResultNonGenericJsonConverter"/> class.</summary>
+            /// <param name="options">The serializer options.</param>
             public ResultNonGenericJsonConverter(JsonSerializerOptions options)
             {
                 _options = new JsonSerializerOptions(options);
                 _options.Converters.Remove(this);
             }
 
+            /// <inheritdoc/>
             public override Result Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartObject)
@@ -95,6 +106,7 @@ namespace Zentient.Results
                 return new Result(status ?? ResultStatuses.Error, messages, errors);
             }
 
+            /// <inheritdoc/>
             public override void Write(Utf8JsonWriter writer, Result value, JsonSerializerOptions options)
             {
                 if (writer == null)
@@ -125,6 +137,10 @@ namespace Zentient.Results
                 writer.WriteEndObject();
             }
 
+            /// <summary>Reads a <see cref="IResultStatus"/> object from the JSON reader.</summary>
+            /// <param name="reader">The JSON reader.</param>
+            /// <param name="options">The serializer options.</param>
+            /// <returns>The deserialized <see cref="IResultStatus"/>.</returns>
             private IResultStatus? ReadStatus(ref Utf8JsonReader reader, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartObject)
@@ -166,6 +182,10 @@ namespace Zentient.Results
                 return new ResultStatus(code, description ?? string.Empty);
             }
 
+            /// <summary>Deserializes a list of <see cref="ErrorInfo"/> objects from the JSON reader.</summary>
+            /// <param name="reader">The JSON reader.</param>
+            /// <param name="options">The serializer options.</param>
+            /// <returns>A list of <see cref="ErrorInfo"/> objects, or <c>null</c> if not present.</returns>
             private List<ErrorInfo>? DeserializeErrorInfoList(ref Utf8JsonReader reader, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartArray)
@@ -198,6 +218,10 @@ namespace Zentient.Results
                 return errorList;
             }
 
+            /// <summary>Reads a single <see cref="ErrorInfo"/> object from the JSON reader.</summary>
+            /// <param name="reader">The JSON reader.</param>
+            /// <param name="options">The serializer options.</param>
+            /// <returns>The deserialized <see cref="ErrorInfo"/>, or <c>null</c> if not present.</returns>
             private ErrorInfo? ReadErrorInfo(ref Utf8JsonReader reader, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartObject)
@@ -253,23 +277,31 @@ namespace Zentient.Results
                 return new ErrorInfo(category, code ?? string.Empty, message ?? string.Empty, data: data, innerErrors: innerErrors);
             }
 
-
+            /// <summary>Converts a property name using the serializer's naming policy, if any.</summary>
+            /// <param name="options">The serializer options.</param>
+            /// <param name="name">The property name to convert.</param>
+            /// <returns>The converted property name.</returns>
             private string ConvertName(JsonSerializerOptions options, string name)
             {
                 return options.PropertyNamingPolicy?.ConvertName(name) ?? name;
             }
         }
 
+        /// <summary>Handles serialization and deserialization for generic <see cref="Result{TValue}"/> types.</summary>
+        /// <typeparam name="TValue">The type of the value encapsulated by the result.</typeparam>
         private class ResultGenericJsonConverter<TValue> : JsonConverter<Result<TValue>>
         {
             private readonly JsonSerializerOptions _options;
 
+            /// <summary>Initializes a new instance of the <see cref="ResultGenericJsonConverter{TValue}"/> class.</summary>
+            /// <param name="options">The serializer options.</param>
             public ResultGenericJsonConverter(JsonSerializerOptions options)
             {
                 _options = new JsonSerializerOptions(options);
                 _options.Converters.Remove(this);
             }
 
+            /// <inheritdoc/>
             public override Result<TValue> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartObject)
@@ -324,6 +356,7 @@ namespace Zentient.Results
                 return new Result<TValue>(value, status, messages, errors);
             }
 
+            /// <inheritdoc/>
             public override void Write(Utf8JsonWriter writer, Result<TValue> value, JsonSerializerOptions options)
             {
                 writer.WriteStartObject();
@@ -352,6 +385,10 @@ namespace Zentient.Results
                 writer.WriteEndObject();
             }
 
+            /// <summary>Reads a <see cref="IResultStatus"/> object from the JSON reader.</summary>
+            /// <param name="reader">The JSON reader.</param>
+            /// <param name="options">The serializer options.</param>
+            /// <returns>The deserialized <see cref="IResultStatus"/>.</returns>
             private IResultStatus? ReadStatus(ref Utf8JsonReader reader, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartObject)
@@ -393,6 +430,10 @@ namespace Zentient.Results
                 return new ResultStatus(code, description ?? string.Empty);
             }
 
+            /// <summary>Deserializes a list of <see cref="ErrorInfo"/> objects from the JSON reader.</summary>
+            /// <param name="reader">The JSON reader.</param>
+            /// <param name="options">The serializer options.</param>
+            /// <returns>A list of <see cref="ErrorInfo"/> objects, or <c>null</c> if not present.</returns>
             private List<ErrorInfo>? DeserializeErrorInfoList(ref Utf8JsonReader reader, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartArray)
@@ -425,6 +466,10 @@ namespace Zentient.Results
                 return errorList;
             }
 
+            /// <summary>Reads a single <see cref="ErrorInfo"/> object from the JSON reader.</summary>
+            /// <param name="reader">The JSON reader.</param>
+            /// <param name="options">The serializer options.</param>
+            /// <returns>The deserialized <see cref="ErrorInfo"/>, or <c>null</c> if not present.</returns>
             private ErrorInfo? ReadErrorInfo(ref Utf8JsonReader reader, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartObject)
@@ -469,7 +514,7 @@ namespace Zentient.Results
                                 data = JsonSerializer.Deserialize<object>(ref reader, options);
                                 break;
                             case "innerErrors":
-                                innerErrors = DeserializeErrorInfoList(ref reader, options); // Recursive call
+                                innerErrors = DeserializeErrorInfoList(ref reader, options);
                                 break;
                             default:
                                 reader.Skip();
@@ -480,8 +525,12 @@ namespace Zentient.Results
                 return new ErrorInfo(category, code ?? string.Empty, message ?? string.Empty, data: data, innerErrors: innerErrors);
             }
 
+            /// <summary>Converts a property name using the serializer's naming policy, if any.</summary>
+            /// <param name="options">The serializer options.</param>
+            /// <param name="name">The property name to convert.</param>
+            /// <returns>The converted property name.</returns>
             private string ConvertName(JsonSerializerOptions options, string name)
-            => options.PropertyNamingPolicy?.ConvertName(name) ?? name;
+                => options.PropertyNamingPolicy?.ConvertName(name) ?? name;
         }
     }
 }
