@@ -114,4 +114,9 @@ The design of `Zentient.Results` allows for future enhancements, including:
 * **More Specialized Error Categories:** Expanding the `ErrorCategory` enum or providing guidance for domain-specific error categorization.
 * **Performance Optimizations:** Continuous profiling and optimization, especially around allocations and common paths.
 
-This document will be updated as the library evolves and new design decisions are made.
+This document serves as a foundational guide for understanding the architectural principles and components of `Zentient.Results`. It is intended to evolve alongside the library, reflecting changes and enhancements in future releases. For more detailed usage examples and API documentation, please refer to the [README.md](README.md) and the [Zentient.Results API documentation](https://github.com/ulfbou/Zentient.Results/wiki).
+
+```
+Last Updated: 2025-06-07
+Version: 0.3.0
+```
