@@ -45,7 +45,7 @@ namespace Zentient.Results.AspNetCore.Filters
             _problemDetailsFactory = problemDetailsFactory ?? throw new ArgumentNullException(nameof(problemDetailsFactory));
             _problemDetailsOptions = options?.Value ?? throw new ArgumentNullException(nameof(options));
             _problemTypeBaseUri = zentientProblemDetailsOptions.Value.ProblemTypeBaseUri
-                ?? ProblemDetailsExtensions.FallbackProblemDetailsBaseUri;
+                ?? ZentientProblemDetailsOptions.FallbackProblemDetailsBaseUri;
         }
 
         /// <summary>
@@ -129,7 +129,7 @@ namespace Zentient.Results.AspNetCore.Filters
                 };
             }
 
-            var problemDetails = zentientResult.ToProblemDetails(_problemDetailsFactory, httpContext, _problemTypeBaseUri);
+            var problemDetails = zentientResult.ToProblemDetails(_problemDetailsFactory, httpContext, new ZentientProblemDetailsOptions { ProblemTypeBaseUri = _problemTypeBaseUri });
 
             if (problemDetails is ValidationProblemDetails validationProblemDetails)
             {

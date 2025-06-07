@@ -20,16 +20,24 @@ namespace Zentient.Results.AspNetCore.Filters
     public class ZentientResultEndpointFilter : IEndpointFilter
     {
         private readonly ProblemDetailsFactory _problemDetailsFactory;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ZentientProblemDetailsOptions _options;
         private readonly string _problemTypeBaseUri;
 
         /// <summary>Initializes a new instance of the <see cref="ZentientResultEndpointFilter"/> class.</summary>
         /// <param name="problemDetailsFactory">The factory used to create <see cref="ProblemDetails"/> instances.</param>
-        /// <param name="problemDetailsOptions">Configuration options for problem details, including the base URI for problem types.</param>
-        public ZentientResultEndpointFilter(ProblemDetailsFactory problemDetailsFactory, IOptions<ZentientProblemDetailsOptions> zentientProblemDetailsOptions)
+        /// <param name="httpContextAccessor">The accessor for the current HTTP context.</param>
+        /// <param name="options">Configuration options for Zentient problem details.</param>
+        public ZentientResultEndpointFilter(
+                ProblemDetailsFactory problemDetailsFactory,
+                IHttpContextAccessor httpContextAccessor,
+                IOptions<ZentientProblemDetailsOptions> options)
         {
-            _problemDetailsFactory = problemDetailsFactory;
-            _problemTypeBaseUri = zentientProblemDetailsOptions.Value.ProblemTypeBaseUri
-                ?? ProblemDetailsExtensions.FallbackProblemDetailsBaseUri;
+            _problemDetailsFactory = problemDetailsFactory ?? throw new ArgumentNullException(nameof(problemDetailsFactory));
+            _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+            _problemTypeBaseUri = _options.ProblemTypeBaseUri
+                ?? ZentientProblemDetailsOptions.FallbackProblemDetailsBaseUri;
         }
 
         /// <summary>
@@ -47,50 +55,23 @@ namespace Zentient.Results.AspNetCore.Filters
         {
             var result = await next(context);
 
-            if (result is not Zentient.Results.IResult zentientResult)
-                return result;
-
-            if (zentientResult.IsFailure)
+            if (result is Zentient.Results.IResult zentientResult)
             {
-                var problemDetails = zentientResult.ToProblemDetails(_problemDetailsFactory, context.HttpContext, _problemTypeBaseUri);
-                return Microsoft.AspNetCore.Http.Results.Problem(problemDetails);
-            }
-
-            object? value = null;
-            bool isGenericResult = false;
-            Type? genericResultValueType = null;
-
-            var zentientResultType = zentientResult.GetType();
-            var iResultGenericInterface = zentientResultType.GetInterfaces()
-                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(Zentient.Results.IResult<>));
-
-            if (iResultGenericInterface != null)
-            {
-                isGenericResult = true;
-                genericResultValueType = iResultGenericInterface.GetGenericArguments()[0];
-                var valueProp = zentientResultType.GetProperty("Value");
-
-                if (valueProp != null && valueProp.PropertyType == genericResultValueType)
+                if (zentientResult.IsFailure)
                 {
-                    value = valueProp.GetValue(zentientResult);
-                }
-                else if (valueProp != null && genericResultValueType != null && valueProp.PropertyType.IsAssignableFrom(genericResultValueType))
-                {
-                    value = valueProp.GetValue(zentientResult);
+                    // Pass the resolved options to the extension method
+                    ProblemDetails problemDetails = zentientResult.ToProblemDetails(
+                        _problemDetailsFactory,
+                        _httpContextAccessor.HttpContext!, // Ensure HttpContext is available
+                        _options, // Pass the options object
+                        instance: context.HttpContext.Request.Path.Value // Pass instance explicitly
+                    );
+
+                    return Result.Problem(problemDetails);
                 }
             }
 
-            return zentientResult.Status.Code switch
-            {
-                (int)HttpStatusCode.OK => isGenericResult && genericResultValueType != null
-                    ? InvokeGenericResultsMethod("Ok", genericResultValueType, value)
-                    : Microsoft.AspNetCore.Http.Results.NoContent(),
-                (int)HttpStatusCode.Created => isGenericResult && genericResultValueType != null
-                    ? InvokeGenericResultsMethod("Created", genericResultValueType, "https://default.com/created/", value)
-                    : Microsoft.AspNetCore.Http.Results.StatusCode((int)HttpStatusCode.Created),
-                (int)HttpStatusCode.NoContent => Microsoft.AspNetCore.Http.Results.NoContent(),
-                _ => Microsoft.AspNetCore.Http.Results.StatusCode(zentientResult.Status.Code)
-            };
+            return result; // Pass through successful results or non-IResult types
         }
 
         private Microsoft.AspNetCore.Http.IResult InvokeGenericResultsMethod(string methodName, Type valueType, params object?[] args)
