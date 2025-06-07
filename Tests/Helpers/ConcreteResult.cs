@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Zentient.Results.Tests.Helpers
+﻿namespace Zentient.Results.Tests.Helpers
 {
     /// <summary>
     /// A concrete implementation of <see cref="IResult"/> for use in tests.
@@ -12,19 +9,29 @@ namespace Zentient.Results.Tests.Helpers
         /// <inheritdoc />
         public bool IsSuccess { get; init; }
 
-        /// <inheritdoc />
-        public bool IsFailure => !IsSuccess;
+        public bool IsFailure { get; }
 
-        /// <inheritdoc />
-        public IReadOnlyList<ErrorInfo> Errors { get; init; } = Array.Empty<ErrorInfo>();
+        public IReadOnlyList<ErrorInfo> Errors { get; }
 
-        /// <inheritdoc />
-        public IReadOnlyList<string> Messages { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> Messages { get; }
 
-        /// <inheritdoc />
-        public string? Error { get; init; }
+        public string? Error { get; }
 
-        /// <inheritdoc />
-        public IResultStatus Status { get; init; } = new MockResultStatus(200);
+        public IResultStatus Status { get; }
+
+        public ConcreteResult(
+            bool isSuccess,
+            IReadOnlyList<ErrorInfo> errors = null,
+            IReadOnlyList<string> messages = null,
+            string? error = null,
+            IResultStatus status = null)
+        {
+            IsSuccess = isSuccess;
+            IsFailure = !isSuccess;
+            Errors = errors ?? Array.Empty<ErrorInfo>();
+            Messages = messages ?? Array.Empty<string>();
+            Error = error;
+            Status = status ?? new MockResultStatus(200);
+        }
     }
 }
