@@ -29,6 +29,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{208BA388-4
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zentient.Docs", "Docs\Zentient.Docs.csproj", "{D06775F1-6123-4234-8A86-A9486347D34E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zentient.Results.Tests", "Tests\Zentient.Results.Tests.csproj", "{31260D84-BC52-66AD-8F3C-0CACF769A302}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,6 +89,18 @@ Global
 		{D06775F1-6123-4234-8A86-A9486347D34E}.Release|x64.Build.0 = Release|Any CPU
 		{D06775F1-6123-4234-8A86-A9486347D34E}.Release|x86.ActiveCfg = Release|Any CPU
 		{D06775F1-6123-4234-8A86-A9486347D34E}.Release|x86.Build.0 = Release|Any CPU
+		{31260D84-BC52-66AD-8F3C-0CACF769A302}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31260D84-BC52-66AD-8F3C-0CACF769A302}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31260D84-BC52-66AD-8F3C-0CACF769A302}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{31260D84-BC52-66AD-8F3C-0CACF769A302}.Debug|x64.Build.0 = Debug|Any CPU
+		{31260D84-BC52-66AD-8F3C-0CACF769A302}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{31260D84-BC52-66AD-8F3C-0CACF769A302}.Debug|x86.Build.0 = Debug|Any CPU
+		{31260D84-BC52-66AD-8F3C-0CACF769A302}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31260D84-BC52-66AD-8F3C-0CACF769A302}.Release|Any CPU.Build.0 = Release|Any CPU
+		{31260D84-BC52-66AD-8F3C-0CACF769A302}.Release|x64.ActiveCfg = Release|Any CPU
+		{31260D84-BC52-66AD-8F3C-0CACF769A302}.Release|x64.Build.0 = Release|Any CPU
+		{31260D84-BC52-66AD-8F3C-0CACF769A302}.Release|x86.ActiveCfg = Release|Any CPU
+		{31260D84-BC52-66AD-8F3C-0CACF769A302}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
