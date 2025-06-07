@@ -28,9 +28,7 @@
 
         }
 
-        /// <summary>
-        /// Contains string constants representing standard HTTP status descriptions.
-        /// </summary>
+        /// <summary>Contains string constants representing standard HTTP status descriptions.</summary>
         internal static class Description
         {
             public const string Ok = "OK";

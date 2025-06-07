@@ -48,8 +48,6 @@ namespace Zentient.Results
         public static bool HasErrorCode(this IResult result, string errorCode)
             => result.IsFailure && result.Errors.Any(e => e.Code == errorCode);
 
-        // --- Fluent Chaining / Transformation ---
-
         /// <summary>Executes an action if the result is a success.</summary>
         /// <param name="result">The <see cref="IResult" /> instance.</param>
         /// <param name="onSuccess">The action to execute on success.</param>
@@ -184,8 +182,6 @@ namespace Zentient.Results
         public static IResult<bool> ToBoolResult(this IResult result)
             => result.IsSuccess ? Result<bool>.Success(true) : Result<bool>.Failure(false, result.Errors, result.Status);
 
-        // --- Error Conversion/Extraction ---
-
         /// <summary>
         /// Converts the result's errors into a single string, typically for logging or display.
         /// </summary>
@@ -206,8 +202,6 @@ namespace Zentient.Results
         => result.IsFailure && result.Errors != null && result.Errors.Any()
             ? result.Errors[0].Message
             : null;
-
-        // --- Conditional Operations (Fluent API) ---
 
         /// <summary>
         /// Executes a function if the result is a success, returning a new IResult.
@@ -259,10 +253,6 @@ namespace Zentient.Results
             => result.IsSuccess
                 ? func()
                 : Result<TOut>.Failure(default, result.Errors, result.Status);
-
-        // --- HTTP Status Code Mapping (Application Layer specific, but useful for Zentient.Results) ---
-        // You might move these to an "ApplicationResultExtensions.cs" if Zentient.Results is purely domain.
-
 
         /// <summary>
         /// Throws an <see cref="ResultException"/> if the result is a failure.

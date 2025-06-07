@@ -1,5 +1,5 @@
 ﻿using System.Runtime.Serialization;
-using System.Text.Json.Serialization; // For System.Text.Json compatibility
+using System.Text.Json.Serialization;
 
 namespace Zentient.Results
 {

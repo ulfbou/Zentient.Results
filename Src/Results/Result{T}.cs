@@ -9,7 +9,7 @@ namespace Zentient.Results
     /// </summary>
     /// <typeparam name="T">The type of the value encapsulated by the result.</typeparam>
     [DataContract]
-    [JsonConverter(typeof(ResultJsonConverter))] // For System.Text.Json support
+    [JsonConverter(typeof(ResultJsonConverter))]
     public readonly struct Result<T> : IResult<T>
     {
         /// <inheritdoc />
@@ -63,10 +63,10 @@ namespace Zentient.Results
         /// <param name="errors">Optional error information.</param>
         [JsonConstructor]
         internal Result(
-            T? value,             // Parameter name 'value' matches JsonPropertyName
+            T? value,
             IResultStatus status,
-            IEnumerable<string>? messages = null, // Parameter name 'messages' matches JsonPropertyName
-            IEnumerable<ErrorInfo>? errors = null)   // Parameter name 'errors' matches JsonPropertyName
+            IEnumerable<string>? messages = null,
+            IEnumerable<ErrorInfo>? errors = null)
         {
             Value = value;
             Status = status;
@@ -83,8 +83,6 @@ namespace Zentient.Results
                 return error.Message ?? error.Code ?? error.Data?.ToString() ?? null;
             });
         }
-
-        // --- Static Factory Methods (generic) ---
 
         /// <summary>Creates a successful generic result.</summary>
         /// <param name="value">The value to encapsulate.</param>
@@ -141,16 +139,12 @@ namespace Zentient.Results
         public static IResult<T> FromException(T? value, Exception ex, IResultStatus? status = null)
             => Failure(value, new ErrorInfo(ErrorCategory.Exception, ex.GetType().Name, ex.Message, data: ex), status ?? ResultStatuses.Error);
 
-        // --- Implicit Conversions ---
-
         /// <summary>
         /// Allows implicit conversion from a value of type <typeparamref name="T"/> to a successful <see cref="Result{T}"/>.
         /// </summary>
         /// <param name="value">The value to encapsulate.</param>
         public static implicit operator Result<T>(T value) =>
             (Result<T>)(value is null ? NoContent() : Success(value));
-
-        // --- Monadic Operations Implementation ---
 
         /// <inheritdoc />
         public IResult<U> Map<U>(Func<T, U> selector) =>
