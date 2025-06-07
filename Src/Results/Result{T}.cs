@@ -120,7 +120,10 @@ namespace Zentient.Results
         {
             var arr = errors as ErrorInfo[] ?? errors?.ToArray() ?? throw new ArgumentNullException(nameof(errors));
             if (arr.Length == 0)
+            {
                 throw new ArgumentException("Error messages cannot be null or empty.", nameof(errors));
+            }
+
             return new Result<T>(value, status, null, arr);
         }
 
@@ -135,8 +138,8 @@ namespace Zentient.Results
         /// <param name="value">The value to encapsulate (can be default or partial data on failure).</param>
         /// <param name="ex">The exception to convert into an error.</param>
         /// <param name="status">Optional custom status. Defaults to <see cref="ResultStatuses.Error"/>.</param>
-        public static IResult<T> FromException(T? value, Exception ex, IResultStatus? status = null) =>
-            Failure(value, new ErrorInfo(ErrorCategory.Exception, ex.GetType().Name, ex.Message, ex), status ?? ResultStatuses.Error);
+        public static IResult<T> FromException(T? value, Exception ex, IResultStatus? status = null)
+            => Failure(value, new ErrorInfo(ErrorCategory.Exception, ex.GetType().Name, ex.Message, data: ex), status ?? ResultStatuses.Error);
 
         // --- Implicit Conversions ---
 

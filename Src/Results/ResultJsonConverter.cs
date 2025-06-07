@@ -250,7 +250,7 @@ namespace Zentient.Results
                         }
                     }
                 }
-                return new ErrorInfo(category, code ?? string.Empty, message ?? string.Empty, data, innerErrors);
+                return new ErrorInfo(category, code ?? string.Empty, message ?? string.Empty, data: data, innerErrors: innerErrors);
             }
 
 
@@ -477,7 +477,7 @@ namespace Zentient.Results
                         }
                     }
                 }
-                return new ErrorInfo(category, code ?? string.Empty, message ?? string.Empty, data, innerErrors);
+                return new ErrorInfo(category, code ?? string.Empty, message ?? string.Empty, data: data, innerErrors: innerErrors);
             }
 
             private string ConvertName(JsonSerializerOptions options, string name)

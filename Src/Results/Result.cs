@@ -2,6 +2,9 @@
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+
 using Zentient.Utilities;
 
 namespace Zentient.Results
@@ -145,8 +148,8 @@ namespace Zentient.Results
         /// </summary>
         /// <param name="ex">The exception to convert into an error.</param>
         /// <param name="status">Optional custom status. Defaults to <see cref="ResultStatuses.Error"/>.</param>
-        public static IResult FromException(Exception ex, IResultStatus? status = null) =>
-            Failure(new ErrorInfo(ErrorCategory.Exception, ex.GetType().Name, ex.Message, ex), status ?? ResultStatuses.Error);
+        public static IResult FromException(Exception ex, IResultStatus? status = null)
+            => Failure(new ErrorInfo(ErrorCategory.Exception, ex.GetType().Name, ex.Message, data: ex), status ?? ResultStatuses.Error);
 
         // --- Implicit Conversions ---
 
@@ -231,20 +234,37 @@ namespace Zentient.Results
         /// <param name="ex">The exception to convert into an error.</param>
         /// <param name="status">Optional custom status. Defaults to <see cref="ResultStatuses.Error"/>.</param>
         public static IResult<T> FromException<T>(Exception ex, IResultStatus? status = null) =>
-            Result<T>.Failure(default, new ErrorInfo(ErrorCategory.Exception, ex.GetType().Name, ex.Message, ex), status ?? ResultStatuses.Error);
+            Result<T>.Failure(default, new ErrorInfo(ErrorCategory.Exception, ex.GetType().Name, ex.Message, data: ex), status ?? ResultStatuses.Error);
+
+        /// <summary>Creates a failure <see cref="IResult"/> from a <see cref="ProblemDetails"/> instance.</summary>
+        /// <param name="problemDetails">The <see cref="ProblemDetails"/> object containing details about the problem.</param>
+        /// <returns>
+        /// An <see cref="IResult"/> representing a problem details failure, with an <see cref="ErrorInfo"/>
+        /// constructed from the <paramref name="problemDetails"/>.
+        /// </returns>
+        internal static IResult Problem(ProblemDetails problemDetails)
+            => new Result(ResultStatuses.Problem, null, new[] {
+                    new ErrorInfo(
+                        ErrorCategory.ProblemDetails,
+                        problemDetails.Type ?? string.Empty,
+                        problemDetails.Title ?? string.Empty,
+                        problemDetails.Detail)
+               });
 
         /// <inheritdoc />
         public override string ToString()
         {
             if (IsSuccess)
+            {
                 return $"Result: Success ({Status}){(Messages.Count > 0 ? $" | Message: {string.Join("; ", Messages)}" : "")}";
+            }
 
 #if NET8_0_OR_GREATER
             // .NET 8+ supports string.Join with IEnumerable<string>
             return $"Result: Failure ({Status}) | Error: {Error} | All Errors: {string.Join("; ", Errors.Select(e => e.ToString()))}";
 #else
-    // For earlier frameworks, convert to array first
-    return $"Result: Failure ({Status}) | Error: {Error} | All Errors: {string.Join("; ", Errors.Select(e => e.ToString()).ToArray())}";
+            // For earlier frameworks, convert to array first
+            return $"Result: Failure ({Status}) | Error: {Error} | All Errors: {string.Join("; ", Errors.Select(e => e.ToString()).ToArray())}";
 #endif
         }
     }
