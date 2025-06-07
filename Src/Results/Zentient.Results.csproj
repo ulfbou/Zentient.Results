@@ -7,11 +7,11 @@
 		<Nullable>enable</Nullable>
 
 		<PackageId>Zentient.Results</PackageId>
-		<Version>0.2.0</Version>
+		<Version>0.3.0</Version>
 		<Title>Zentient.Results</Title>
 		<Authors>Ulf Bourelius</Authors>
 		<Company>Ulf Bourelius</Company>
-		<Description>A lightweight, robust and flexible result object for .NET 6+, providing a standardized way to represent the outcome of operations, whether successful or not.</Description>
+		<Description>A lightweight, robust and flexible result object for .NET 6-9, providing a standardized way to represent the outcome of operations, whether successful or not.</Description>
 		<Copyright>Copyright © 2025 Ulf Bourelius</Copyright>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageProjectUrl>https://github.com/ulfbou/Zentient</PackageProjectUrl>
@@ -23,9 +23,9 @@
 
 		<AssemblyTitle>Zentient.Results</AssemblyTitle>
 		<AssemblyName>Zentient.Results</AssemblyName>
-		<AssemblyVersion>0.2.0.0</AssemblyVersion>
-		<FileVersion>0.2.0.0</FileVersion>
-		<InformationalVersion>0.2.0</InformationalVersion>
+		<AssemblyVersion>0.3.0.0</AssemblyVersion>
+		<FileVersion>0.3.0.0</FileVersion>
+		<InformationalVersion>0.3.0</InformationalVersion>
 
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<EmbedUntrackedSources>true</EmbedUntrackedSources>
