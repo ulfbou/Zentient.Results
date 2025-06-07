@@ -1,12 +1,19 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿// File: Zentient.Results.AspNetCore/ProblemDetailsExtensions.cs
+
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using Zentient.Results;
+using Microsoft.Extensions.Options; // New using directive
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
-using Zentient.Utilities;
+
+using Zentient.Results;
+using Zentient.Results.AspNetCore.Configuration;
+using Zentient.Utilities; // Assuming ErrorInfo and IResult are from here
 
 namespace Zentient.Results.AspNetCore
 {
@@ -18,12 +25,6 @@ namespace Zentient.Results.AspNetCore
     public static class ProblemDetailsExtensions
     {
         /// <summary>
-        /// The fallback URI for the base of problem details types, referencing the relevant section
-        /// of RFC 9110. This URI is used as a default when no custom problem type base URI is specified.
-        /// </summary>
-        public const string FallbackProblemDetailsBaseUri = "https://tools.ietf.org/html/rfc9110#section-15.5";
-
-        /// <summary>
         /// Converts a failed <see cref="Zentient.Results.IResult"/> instance into an appropriate
         /// <see cref="ProblemDetails"/> or <see cref="ValidationProblemDetails"/> response.
         /// </summary>
@@ -33,26 +34,32 @@ namespace Zentient.Results.AspNetCore
         /// framework (e.g., injected into a filter or middleware).</param>
         /// <param name="httpContext">The current <see cref="HttpContext"/>, necessary for rich ProblemDetails generation
         /// (e.g., instance URI, trace ID, and custom problem details options).</param>
+        /// <param name="options">The configured <see cref="ZentientProblemDetailsOptions"/>.</param>
+        /// <param name="instance">An optional URI that identifies the specific occurrence of the problem.
+        /// Defaults to the current request's path if not provided.</param>
         /// <returns>A <see cref="ProblemDetails"/> instance representing the error.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the <paramref name="result"/> is a success result.</exception>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="factory"/> or <paramref name="httpContext"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="factory"/> or <paramref name="httpContext"/> or <paramref name="options"/> is null.</exception>
         public static ProblemDetails ToProblemDetails(
-                    this Zentient.Results.IResult result,
-                    ProblemDetailsFactory factory,
-                    HttpContext httpContext,
-                    string problemTypeBaseUri)
+            this Zentient.Results.IResult result,
+            ProblemDetailsFactory factory,
+            HttpContext httpContext,
+            ZentientProblemDetailsOptions options, // Pass options directly
+            string? instance = null) // Add optional instance parameter
         {
             ArgumentNullException.ThrowIfNull(factory, nameof(factory));
             ArgumentNullException.ThrowIfNull(httpContext, nameof(httpContext));
+            ArgumentNullException.ThrowIfNull(options, nameof(options));
 
             if (result.IsSuccess)
             {
                 throw new InvalidOperationException("Cannot convert a successful result to ProblemDetails. ProblemDetails are for failure results only.");
             }
 
+            string problemTypeBaseUri = options.ProblemTypeBaseUri;
             if (string.IsNullOrWhiteSpace(problemTypeBaseUri))
             {
-                problemTypeBaseUri = FallbackProblemDetailsBaseUri;
+                problemTypeBaseUri = ZentientProblemDetailsOptions.FallbackProblemDetailsBaseUri;
             }
             else if (!problemTypeBaseUri.EndsWith("/"))
             {
@@ -64,6 +71,7 @@ namespace Zentient.Results.AspNetCore
             int statusCode = (int)httpStatusCodeEnum;
             string problemType;
 
+            // Determine problem type based on error category or status code
             if (result.Errors.Any(e => e.Category == ErrorCategory.Validation))
             {
                 problemType = $"{problemTypeBaseUri}validation";
@@ -74,17 +82,19 @@ namespace Zentient.Results.AspNetCore
                 {
                     problemType = $"{problemTypeBaseUri}{firstError.Code.ToLowerInvariant()}";
                 }
-                else if (firstError.Category.IsDefined() && firstError.Category != ErrorCategory.None)
+                else if (firstError.Category.IsDefined() == true && firstError.Category != ErrorCategory.None)
                 {
                     problemType = $"{problemTypeBaseUri}{firstError.Category.ToString().ToLowerInvariant()}";
                 }
                 else
                 {
+                    // Fallback to HTTP status code if no specific code or category is available
                     problemType = $"{problemTypeBaseUri}{statusCode.ToString().ToLowerInvariant()}";
                 }
             }
             else
             {
+                // Fallback to HTTP status code if no errors are present but result is a failure
                 problemType = $"{problemTypeBaseUri}{statusCode.ToString().ToLowerInvariant()}";
             }
 
@@ -101,12 +111,9 @@ namespace Zentient.Results.AspNetCore
             }
 
             ProblemDetails problemDetails;
-
             if (result.Errors.Any(e => e.Category == ErrorCategory.Validation) || statusCode == (int)HttpStatusCode.UnprocessableEntity)
             {
                 var modelState = new ModelStateDictionary();
-                // Only add validation errors to modelState.
-                // If statusCode is 422 but Errors list is empty, modelState will remain empty, which is correct.
                 foreach (var error in result.Errors.Where(e => e.Category == ErrorCategory.Validation))
                 {
                     string key;
@@ -120,7 +127,7 @@ namespace Zentient.Results.AspNetCore
                     }
                     else
                     {
-                        key = "General";
+                        key = "General"; // Default key if no specific field/code
                     }
                     modelState.AddModelError(key, error.Message);
                 }
@@ -128,34 +135,39 @@ namespace Zentient.Results.AspNetCore
                 problemDetails = factory.CreateValidationProblemDetails(
                     httpContext: httpContext,
                     modelStateDictionary: modelState,
-                    statusCode: (int)statusCode,
+                    statusCode: statusCode, // Use the determined status code
                     title: problemTitle,
                     type: problemType,
-                    detail: problemDetail
+                    detail: problemDetail,
+                    instance: instance ?? httpContext.Request.Path.Value // Use provided instance or request path
                 );
             }
             else // For all other non-validation failure scenarios
             {
                 problemDetails = factory.CreateProblemDetails(
                     httpContext: httpContext,
-                    statusCode: (int)statusCode,
+                    statusCode: statusCode, // Use the determined status code
                     title: problemTitle,
                     type: problemType,
-                    detail: problemDetail
+                    detail: problemDetail,
+                    instance: instance ?? httpContext.Request.Path.Value // Use provided instance or request path
                 );
             }
 
             if (problemDetails == null)
             {
+                // This should ideally not happen if ProblemDetailsFactory is correctly implemented,
+                // but adding a defensive check is good practice.
                 throw new InvalidOperationException("ProblemDetailsFactory returned null ProblemDetails.");
             }
 
-            problemDetails.Status = (int)statusCode;
+            // Ensure properties are set correctly by the factory or explicitly if not
+            // The factory methods usually set these, but explicit assignment here ensures consistency.
+            problemDetails.Status = statusCode;
             problemDetails.Title = problemTitle;
             problemDetails.Detail = problemDetail;
             problemDetails.Type = problemType;
-            problemDetails.Instance ??= httpContext.Request.Path.Value;
-
+            problemDetails.Instance ??= httpContext.Request.Path.Value; // Redundant but harmless, ensures instance is always there
 
             AddErrorInfoExtensions(problemDetails, result.Errors);
 
@@ -165,20 +177,24 @@ namespace Zentient.Results.AspNetCore
         /// <summary>
         /// Converts a failed <see cref="Zentient.Results.IResult{T}"/> instance into an appropriate
         /// <see cref="ProblemDetails"/> or <see cref="ValidationProblemDetails"/> response.
-        /// This method simply delegates to the non-generic <see cref="ToProblemDetails(IResult, ProblemDetailsFactory, HttpContext)"/>.
+        /// This method simply delegates to the non-generic <see cref="ToProblemDetails(IResult, ProblemDetailsFactory, HttpContext, ZentientProblemDetailsOptions, string?)"/>.
         /// </summary>
         /// <typeparam name="T">The type of the success value (ignored for failure conversion).</typeparam>
         /// <param name="result">The <see cref="Zentient.Results.IResult{T}"/> instance to convert.</param>
         /// <param name="factory">The <see cref="ProblemDetailsFactory"/> instance.</param>
         /// <param name="httpContext">The current <see cref="HttpContext"/>.</param>
+        /// <param name="zentientProblemDetailsOptions">The configured <see cref="ZentientProblemDetailsOptions"/>.</param>
+        /// <param name="instance">An optional URI that identifies the specific occurrence of the problem.
+        /// Defaults to the current request's path if not provided.</param>
         /// <returns>A <see cref="ProblemDetails"/> instance representing the error.</returns>
         public static ProblemDetails ToProblemDetails<T>(
             this Zentient.Results.IResult<T> result,
             ProblemDetailsFactory factory,
             HttpContext httpContext,
-            string problemTypeBaseUri)
+            ZentientProblemDetailsOptions zentientProblemDetailsOptions, // Pass options directly
+            string? instance = null) // Add optional instance parameter
         {
-            return (result as Zentient.Results.IResult).ToProblemDetails(factory, httpContext, problemTypeBaseUri);
+            return (result as Zentient.Results.IResult).ToProblemDetails(factory, httpContext, zentientProblemDetailsOptions, instance);
         }
 
         /// <summary>
@@ -197,30 +213,26 @@ namespace Zentient.Results.AspNetCore
         /// <returns>An HttpStatusCode value.</returns>
         public static HttpStatusCode ToHttpStatusCode(this IResult result)
         {
-            if (result.IsSuccess) return HttpStatusCode.OK;
+            if (result.IsSuccess) return HttpStatusCode.OK; // Should ideally not be called for success results
 
             var firstErrorCategory = result.Errors?.FirstOrDefault().Category;
 
             return firstErrorCategory switch
             {
                 ErrorCategory.NotFound => HttpStatusCode.NotFound,
-                ErrorCategory.Validation => HttpStatusCode.BadRequest,
+                ErrorCategory.Validation => HttpStatusCode.BadRequest, // Validation errors typically map to 400
                 ErrorCategory.Conflict => HttpStatusCode.Conflict,
-                ErrorCategory.Authentication => HttpStatusCode.Unauthorized,
+                ErrorCategory.Authentication => HttpStatusCode.Unauthorized, // For authentication failures
                 ErrorCategory.Network => HttpStatusCode.ServiceUnavailable,
                 ErrorCategory.Timeout => HttpStatusCode.RequestTimeout,
-                ErrorCategory.Security => HttpStatusCode.Forbidden,
-                ErrorCategory.Request => HttpStatusCode.BadRequest,
+                ErrorCategory.Security => HttpStatusCode.Forbidden, // For authorization failures
+                ErrorCategory.Request => HttpStatusCode.BadRequest, // General client-side error
+                // Explicitly map these to ensure they're covered even if not the first error
                 ErrorCategory.Unauthorized => HttpStatusCode.Unauthorized,
                 ErrorCategory.Forbidden => HttpStatusCode.Forbidden,
                 ErrorCategory.ServiceUnavailable => HttpStatusCode.ServiceUnavailable,
                 ErrorCategory.InternalServerError => HttpStatusCode.InternalServerError,
-                //ErrorCategory.Unauthorized => HttpStatusCode.Unauthorized,
-                //ErrorCategory.Forbidden => HttpStatusCode.Forbidden,
-                //ErrorCategory.Concurrency => HttpStatusCode.Conflict,
-                //ErrorCategory.TooManyRequests => (HttpStatusCode)429,
-                //ErrorCategory.ExternalService => HttpStatusCode.ServiceUnavailable,
-                _ => HttpStatusCode.InternalServerError
+                _ => HttpStatusCode.InternalServerError // Default for unhandled or generic errors
             };
         }
 
@@ -259,7 +271,6 @@ namespace Zentient.Results.AspNetCore
                 {
                     errorObject["innerErrors"] = error.InnerErrors.Select(ie => ToErrorObject(ie)).ToList();
                 }
-
                 return errorObject;
             }
         }
