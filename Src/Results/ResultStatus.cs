@@ -65,3 +65,4 @@ namespace Zentient.Results
         public static bool operator !=(ResultStatus? left, ResultStatus? right) => !Equals(left, right);
     }
 }
+

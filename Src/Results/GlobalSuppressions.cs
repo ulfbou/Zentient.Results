@@ -8,3 +8,4 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "<Pending>", Scope = "type", Target = "~T:Zentient.Results.JsonConstants.ErrorInfo")]
 [assembly: SuppressMessage("Naming", "CA1715:Identifiers should have correct prefix", Justification = "<Pending>", Scope = "member", Target = "~M:Zentient.Results.IResult`1.Map``1(System.Func{`0,``0})~Zentient.Results.IResult{``0}")]
 [assembly: SuppressMessage("Performance", "CA1810:Initialize reference type static fields inline", Justification = "<Pending>", Scope = "member", Target = "~M:Zentient.Results.ResultStatuses.#cctor")]
+

@@ -96,3 +96,4 @@ namespace Zentient.Results
         U Match<U>(Func<T, U> onSuccess, Func<IReadOnlyList<ErrorInfo>, U> onFailure);
     }
 }
+

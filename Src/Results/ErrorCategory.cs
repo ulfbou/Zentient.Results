@@ -74,3 +74,4 @@ namespace Zentient.Results
         [EnumMember(Value = "problem_details")] ProblemDetails
     }
 }
+

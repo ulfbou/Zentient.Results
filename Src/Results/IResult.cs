@@ -24,3 +24,4 @@
         IResultStatus Status { get; }
     }
 }
+
