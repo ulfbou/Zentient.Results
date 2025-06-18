@@ -19,6 +19,7 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>dotnet;net9;utilities;zentient</PackageTags>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 
 		<AssemblyTitle>Zentient.Utilities</AssemblyTitle>
 		<AssemblyName>Zentient.Utilities</AssemblyName>
