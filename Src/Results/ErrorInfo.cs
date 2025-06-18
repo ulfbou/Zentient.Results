@@ -8,37 +8,37 @@ namespace Zentient.Results
     /// Represents detailed information about an error.
     /// </summary>
     [DataContract]
-    public readonly struct ErrorInfo
+    public readonly struct ErrorInfo : IEquatable<ErrorInfo>
     {
         /// <summary>Gets the category of the error.</summary>
         [DataMember(Order = 1)]
-        [JsonPropertyName("category")]
+        [JsonPropertyName(JsonConstants.ErrorInfo.Category)]
         [JsonInclude]
         public ErrorCategory Category { get; }
 
         /// <summary>Gets a specific code for the error (e.g., "USER-001", "EMAIL_INVALID").</summary>
         [DataMember(Order = 2)]
-        [JsonPropertyName("code")]
+        [JsonPropertyName(JsonConstants.ErrorInfo.Code)]
         [JsonInclude]
         public string Code { get; }
 
         /// <summary>Gets a human-readable message describing the error.</summary>
         [DataMember(Order = 3)]
-        [JsonPropertyName("message")]
+        [JsonPropertyName(JsonConstants.ErrorInfo.Message)]
         [JsonInclude]
         public string Message { get; }
         public string? Detail { get; }
 
         /// <summary>Gets optional, additional data related to the error (e.g., property name for validation errors).</summary>
         [DataMember(Order = 4)]
-        [JsonPropertyName("data")]
+        [JsonPropertyName(JsonConstants.ErrorInfo.Data)]
         [JsonInclude]
         public object? Data { get; }
         public IReadOnlyDictionary<string, object?> Extensions { get; }
 
         /// <summary>Gets a list of inner errors, useful for hierarchical error reporting (e.g., aggregated validation errors).</summary>
         [DataMember(Order = 5)]
-        [JsonPropertyName("innerErrors")]
+        [JsonPropertyName(JsonConstants.ErrorInfo.InnerErrors)]
         [JsonInclude]
         public IReadOnlyList<ErrorInfo> InnerErrors { get; }
 
@@ -81,10 +81,43 @@ namespace Zentient.Results
         public static ErrorInfo Aggregate(string code, string message, IEnumerable<ErrorInfo> innerErrors, object? data = null)
             => new(ErrorCategory.Validation, code, message, data: data, innerErrors: innerErrors);
 
-        /// <summary>
-        /// Returns a string representation of the <see cref="ErrorInfo"/>.
-        /// </summary>
-        /// <returns>A string containing the error code, message, and category.</returns>
+        /// <inheritdoc />
         public override string ToString() => $"[{Category}:{Code}] {Message}";
+
+        /// <inheritdoc />
+        public override bool Equals(object? obj)
+        {
+            return obj is ErrorInfo other && Equals(other);
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Category, Code, Message, Detail, Data, Extensions, InnerErrors);
+        }
+
+        /// <inheritdoc />
+        public static bool operator ==(ErrorInfo left, ErrorInfo right)
+        {
+            return left.Equals(right);
+        }
+
+        /// <inheritdoc />
+        public static bool operator !=(ErrorInfo left, ErrorInfo right)
+        {
+            return !(left == right);
+        }
+
+        /// <inheritdoc />
+        public bool Equals(ErrorInfo other)
+        {
+            return Category == other.Category &&
+                   Code == other.Code &&
+                   Message == other.Message &&
+                   Detail == other.Detail &&
+                   EqualityComparer<object?>.Default.Equals(Data, other.Data) &&
+                   Extensions.SequenceEqual(other.Extensions) &&
+                   InnerErrors.SequenceEqual(other.InnerErrors);
+        }
     }
 }

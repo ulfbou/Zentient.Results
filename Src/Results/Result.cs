@@ -6,6 +6,7 @@ using System.Linq;
 using System.Collections.Generic;
 
 using Zentient.Utilities;
+using Zentient.Results.Serialization;
 
 #if NET8_0_OR_GREATER
 using Microsoft.AspNetCore.Http;
@@ -22,7 +23,7 @@ namespace Zentient.Results
     /// </summary>
     [DataContract]
     [JsonConverter(typeof(ResultJsonConverter))]
-    public readonly struct Result : IResult
+    public readonly struct Result : IResult, IEquatable<Result>
     {
         [DataMember(Order = 2)]
         [JsonIgnore]
@@ -54,7 +55,7 @@ namespace Zentient.Results
 
         /// <inheritdoc />
         [JsonPropertyName("error")]
-        public string? Error => _firstError.Value;
+        public string? ErrorMessage => _firstError.Value;
 
         /// <inheritdoc />
         [DataMember(Order = 4)]
@@ -167,7 +168,10 @@ namespace Zentient.Results
         /// <param name="status">Optional custom status. Defaults to <see cref="ResultStatuses.Error"/>.</param>
         /// <returns>A failure <see cref="IResult"/> representing the exception.</returns>
         public static IResult FromException(Exception ex, IResultStatus? status = null)
-            => Failure(new ErrorInfo(ErrorCategory.Exception, ex.GetType().Name, ex.Message, data: ex), status ?? ResultStatuses.Error);
+        {
+            ArgumentNullException.ThrowIfNull(ex, nameof(ex));
+            return Failure(new ErrorInfo(ErrorCategory.Exception, ex.GetType().Name, ex.Message, data: ex), status ?? ResultStatuses.Error);
+        }
 
         /// <summary>
         /// Allows implicit conversion from an <see cref="ErrorInfo"/> to a failure <see cref="Result"/>.
@@ -278,7 +282,10 @@ namespace Zentient.Results
         /// <param name="status">Optional custom status. Defaults to <see cref="ResultStatuses.Error"/>.</param>
         /// <returns>A failure <see cref="IResult{TValue}"/> representing the exception.</returns>
         public static IResult<T> FromException<T>(Exception ex, IResultStatus? status = null)
-            => Result<T>.Failure(default, new ErrorInfo(ErrorCategory.Exception, ex.GetType().Name, ex.Message, data: ex), status ?? ResultStatuses.Error);
+        {
+            ArgumentNullException.ThrowIfNull(ex, nameof(ex));
+            return Result<T>.Failure(default, new ErrorInfo(ErrorCategory.Exception, code: ex.GetType().Name, ex.Message, data: ex), status ?? ResultStatuses.Error);
+        }
 
 #if PROBLEM_DETAILS
         /// <summary>
@@ -359,11 +366,50 @@ namespace Zentient.Results
             }
 
 #if NET8_0_OR_GREATER
-            return $"Result: Failure ({Status}) | Error: {Error} | All Errors: {string.Join("; ", Errors.Select(e => e.ToString()))}";
+            return $"Result: Failure ({Status}) | Error: {ErrorMessage} | All Errors: {string.Join("; ", Errors.Select(e => e.ToString()))}";
 #else
             // For earlier frameworks, convert to array first
-            return $"Result: Failure ({Status}) | Error: {Error} | All Errors: {string.Join("; ", Errors.Select(e => e.ToString()).ToArray())}";
+            return $"Result: Failure ({Status}) | Error: {ErrorMessage} | All Errors: {string.Join("; ", Errors.Select(e => e.ToString()).ToArray())}";
 #endif
+        }
+
+        /// <inheritdoc />
+        public Result ToResult()
+        {
+            return this;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object? obj)
+        {
+            return obj is Result other && Equals(other);
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Status, _errors, _messages, _firstError.Value);
+        }
+
+        /// <inheritdoc />
+        public static bool operator ==(Result left, Result right)
+        {
+            return left.Equals(right);
+        }
+
+        /// <inheritdoc />
+        public static bool operator !=(Result left, Result right)
+        {
+            return !(left == right);
+        }
+
+        /// <inheritdoc />
+        public bool Equals(Result other)
+        {
+            return Status.Equals(other.Status) &&
+                   _errors.SequenceEqual(other._errors) &&
+                   _messages.SequenceEqual(other._messages) &&
+                   _firstError.Value == other._firstError.Value;
         }
     }
 }

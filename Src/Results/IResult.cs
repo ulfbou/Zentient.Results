@@ -18,7 +18,7 @@
         IReadOnlyList<string> Messages { get; }
 
         /// <summary>Gets the message of the first error if the operation failed; otherwise, null.</summary>
-        string? Error { get; }
+        string? ErrorMessage { get; }
 
         /// <summary>Gets the semantic status of the result, providing contextual information (e.g., HTTP-like status codes).</summary>
         IResultStatus Status { get; }

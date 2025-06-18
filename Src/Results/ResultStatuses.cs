@@ -3,7 +3,8 @@
     /// <summary>Provides a set of common, predefined result statuses.</summary>
     public static class ResultStatuses
     {
-        private static readonly IDictionary<int, IResultStatus> _statuses;
+        private static readonly Dictionary<int, IResultStatus> _statuses;
+
         public static readonly IResultStatus Success = new ResultStatus(Constants.Code.Ok, Constants.Description.Ok);
         public static readonly IResultStatus Created = new ResultStatus(Constants.Code.Created, Constants.Description.Created);
         public static readonly IResultStatus Accepted = new ResultStatus(Constants.Code.Accepted, Constants.Description.Accepted);
