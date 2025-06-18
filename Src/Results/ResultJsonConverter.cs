@@ -2,42 +2,58 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Zentient.Results
+namespace Zentient.Results.Serialization
 {
     /// <summary>
-    /// A custom <see cref="JsonConverterFactory"/> for serializing and deserializing <see cref="IResult"/> and <see cref="IResult{T}"/> types.
-    /// Handles both generic and non-generic result types, including error and status information.
+    /// A custom JSON converter factory for <see cref="Result"/> and <see cref="Result{T}"/> types.
+    /// This allows proper serialization/deserialization of these immutable structs using
+    /// System.Text.Json, handling their internal structure (success/failure, value, errors, messages, status).
     /// </summary>
-    public class ResultJsonConverter : JsonConverterFactory
+    public sealed class ResultJsonConverter : JsonConverterFactory
     {
-        /// <summary>Determines whether the specified type can be converted by this converter.</summary>
+        /// <inheritdoc/>
+        /// <summary>
+        /// Determines whether the <paramref name="typeToConvert"/> is a <see cref="Result"/>
+        /// or <see cref="Result{T}"/> type and thus can be converted by this factory.
+        /// </summary>
         /// <param name="typeToConvert">The type to check for convertibility.</param>
-        /// <returns><c>true</c> if the type implements <see cref="IResult"/>; otherwise, <c>false</c>.</returns>
+        /// <returns><c>true</c> if the type can be converted; otherwise, <c>false</c>.</returns>
         public override bool CanConvert(Type typeToConvert)
         {
             return typeof(IResult).IsAssignableFrom(typeToConvert);
         }
 
-        /// <summary>Creates a <see cref="JsonConverter"/> for the specified type.</summary>
-        /// <param name="typeToConvert">The type to create a converter for.</param>
-        /// <param name="options">The serializer options.</param>
-        /// <returns>A <see cref="JsonConverter"/> instance for the type, or <c>null</c> if not supported.</returns>
+        /// <inheritdoc/>
+        /// <summary>
+        /// Creates a <see cref="JsonConverter"/> for the specified <paramref name="typeToConvert"/>.
+        /// Delegates to a non-generic or generic internal converter based on the type.
+        /// </summary>
+        /// <param name="typeToConvert">The type for which to create the converter.</param>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> being used for serialization.</param>
+        /// <returns>A new <see cref="JsonConverter"/> instance for the specified type, or <c>null</c> if not convertible.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="typeToConvert"/> is <c>null</c>.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if an appropriate generic converter cannot be created.</exception>
         public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
+            ArgumentNullException.ThrowIfNull(typeToConvert, nameof(typeToConvert));
+            ArgumentNullException.ThrowIfNull(options, nameof(options));
+
             if (typeToConvert.IsGenericType &&
-                (typeToConvert.GetGenericTypeDefinition() == typeof(Result<>) ||
-                 typeToConvert.GetGenericTypeDefinition() == typeof(IResult<>)))
+            (typeToConvert.GetGenericTypeDefinition() == typeof(Result<>) ||
+             typeToConvert.GetGenericTypeDefinition() == typeof(IResult<>)))
             {
                 Type valueType = typeToConvert.GetGenericArguments()[0];
+                Type converterType = typeof(ResultGenericJsonConverter<>).MakeGenericType(valueType);
                 return (JsonConverter)Activator.CreateInstance(
-                    typeof(ResultGenericJsonConverter<>).MakeGenericType(valueType),
-                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public,
-                    binder: null,
-                    args: new object[] { options },
-                    culture: null)!;
+                converterType,
+                BindingFlags.Instance | BindingFlags.Public,
+                binder: null,
+                args: new object[] { options },
+                culture: null)!;
             }
 
             if (typeToConvert == typeof(Result) || typeToConvert == typeof(IResult))
@@ -48,25 +64,41 @@ namespace Zentient.Results
             return null;
         }
 
-        /// <summary>Handles serialization and deserialization for non-generic <see cref="Result"/> types.</summary>
-        private class ResultNonGenericJsonConverter : JsonConverter<Result>
+        /// <summary>
+        /// Internal converter for the non-generic <see cref="Result"/> type.
+        /// Handles the serialization and deserialization of <see cref="Result"/> instances.
+        /// </summary>
+        private sealed class ResultNonGenericJsonConverter : JsonConverter<Result>
         {
             private readonly JsonSerializerOptions _options;
 
-            /// <summary>Initializes a new instance of the <see cref="ResultNonGenericJsonConverter"/> class.</summary>
-            /// <param name="options">The serializer options.</param>
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ResultNonGenericJsonConverter"/> class.
+            /// </summary>
+            /// <param name="options">The <see cref="JsonSerializerOptions"/> being used for serialization.</param>
+            /// <exception cref="ArgumentNullException">Thrown if <paramref name="options"/> is <c>null</c>.</exception>
             public ResultNonGenericJsonConverter(JsonSerializerOptions options)
             {
                 _options = new JsonSerializerOptions(options);
+
                 _options.Converters.Remove(this);
             }
 
             /// <inheritdoc/>
+            /// <summary>
+            /// Reads a <see cref="Result"/> object from the JSON.
+            /// </summary>
+            /// <param name="reader">The <see cref="Utf8JsonReader"/> to read from.</param>
+            /// <param name="typeToConvert">The type of the object to convert.</param>
+            /// <param name="options">The <see cref="JsonSerializerOptions"/> to use.</param>
+            /// <returns>A new <see cref="Result"/> instance deserialized from the JSON.</returns>
+            /// <exception cref="JsonException">Thrown if the JSON is not in the expected format.</exception>
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "<Pending>")]
             public override Result Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartObject)
                 {
-                    throw new JsonException("Expected StartObject token.");
+                    throw new JsonException("Expected StartObject token for Result.");
                 }
 
                 IResultStatus? status = null;
@@ -85,16 +117,21 @@ namespace Zentient.Results
                         string propertyName = reader.GetString()!;
                         reader.Read();
 
-                        switch (propertyName)
+                        switch (propertyName.ToLowerInvariant())
                         {
                             case "status":
-                                status = ReadStatus(ref reader, options);
+                                status = ResultNonGenericJsonConverter.ReadStatus(ref reader, options);
                                 break;
                             case "messages":
-                                messages = JsonSerializer.Deserialize<List<string>>(ref reader, options);
+                                messages = JsonSerializer.Deserialize<List<string>>(ref reader, _options);
                                 break;
                             case "errors":
-                                errors = DeserializeErrorInfoList(ref reader, options);
+                                errors = DeserializeErrorInfoList(ref reader, _options);
+                                break;
+                            case "issuccess":
+                            case "isfailure":
+                            case "errormessage":
+                                reader.Skip();
                                 break;
                             default:
                                 reader.Skip();
@@ -107,41 +144,56 @@ namespace Zentient.Results
             }
 
             /// <inheritdoc/>
+            /// <summary>
+            /// Writes a <see cref="Result"/> object to the JSON.
+            /// </summary>
+            /// <param name="writer">The <see cref="Utf8JsonWriter"/> to write to.</param>
+            /// <param name="value">The <see cref="Result"/> instance to serialize.</param>
+            /// <param name="options">The <see cref="JsonSerializerOptions"/> to use.</param>
+            /// <exception cref="ArgumentNullException">Thrown if <paramref name="writer"/> is <c>null</c>.</exception>
             public override void Write(Utf8JsonWriter writer, Result value, JsonSerializerOptions options)
             {
-                if (writer == null)
-                {
-                    throw new ArgumentNullException(nameof(writer));
-                }
+                ArgumentNullException.ThrowIfNull(writer, nameof(writer));
 
                 writer.WriteStartObject();
-                writer.WritePropertyName(ConvertName(options, nameof(IResult.IsSuccess)));
+
+                writer.WritePropertyName(ResultNonGenericJsonConverter.ConvertName(_options, nameof(IResult.IsSuccess)));
                 writer.WriteBooleanValue(value.IsSuccess);
-                writer.WritePropertyName(ConvertName(options, nameof(IResult.IsFailure)));
+
+                writer.WritePropertyName(ResultNonGenericJsonConverter.ConvertName(_options, nameof(IResult.IsFailure)));
                 writer.WriteBooleanValue(value.IsFailure);
-                writer.WritePropertyName(ConvertName(options, nameof(IResult.Status)));
+
+                writer.WritePropertyName(ResultNonGenericJsonConverter.ConvertName(_options, nameof(IResult.Status)));
                 JsonSerializer.Serialize(writer, value.Status, value.Status.GetType(), _options);
 
                 if (value.Messages.Any())
                 {
-                    writer.WritePropertyName(ConvertName(options, nameof(IResult.Messages)));
+                    writer.WritePropertyName(ResultNonGenericJsonConverter.ConvertName(_options, nameof(IResult.Messages)));
                     JsonSerializer.Serialize(writer, value.Messages, _options);
                 }
 
                 if (value.Errors.Any())
                 {
-                    writer.WritePropertyName(ConvertName(options, nameof(IResult.Errors)));
+                    writer.WritePropertyName(ResultNonGenericJsonConverter.ConvertName(_options, nameof(IResult.Errors)));
                     JsonSerializer.Serialize(writer, value.Errors, _options);
+                }
+
+                if (value.ErrorMessage != null)
+                {
+                    writer.WritePropertyName(ResultNonGenericJsonConverter.ConvertName(_options, nameof(IResult.ErrorMessage)));
+                    writer.WriteStringValue(value.ErrorMessage);
                 }
 
                 writer.WriteEndObject();
             }
 
-            /// <summary>Reads a <see cref="IResultStatus"/> object from the JSON reader.</summary>
-            /// <param name="reader">The JSON reader.</param>
-            /// <param name="options">The serializer options.</param>
-            /// <returns>The deserialized <see cref="IResultStatus"/>.</returns>
-            private IResultStatus? ReadStatus(ref Utf8JsonReader reader, JsonSerializerOptions options)
+            /// <summary>
+            /// Reads an <see cref="IResultStatus"/> object from the JSON.
+            /// </summary>
+            /// <param name="reader">The <see cref="Utf8JsonReader"/> to read from.</param>
+            /// <param name="options">The <see cref="JsonSerializerOptions"/> to use.</param>
+            /// <returns>A new <see cref="IResultStatus"/> instance deserialized from the JSON, or <c>null</c> if not found or invalid.</returns>
+            private static IResultStatus? ReadStatus(ref Utf8JsonReader reader, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartObject)
                 {
@@ -152,40 +204,27 @@ namespace Zentient.Results
                 int code = 0;
                 string? description = null;
 
-                while (reader.Read())
+                using (JsonDocument doc = JsonDocument.ParseValue(ref reader))
                 {
-                    if (reader.TokenType == JsonTokenType.EndObject)
+                    JsonElement root = doc.RootElement;
+                    if (root.TryGetProperty("code", out JsonElement codeElement))
                     {
-                        break;
+                        code = codeElement.GetInt32();
                     }
-
-                    if (reader.TokenType == JsonTokenType.PropertyName)
+                    if (root.TryGetProperty("description", out JsonElement descriptionElement))
                     {
-                        string propertyName = reader.GetString()!;
-                        reader.Read();
-
-                        switch (propertyName)
-                        {
-                            case "code":
-                                code = reader.GetInt32();
-                                break;
-                            case "description":
-                                description = reader.GetString();
-                                break;
-                            default:
-                                reader.Skip();
-                                break;
-                        }
+                        description = descriptionElement.GetString();
                     }
                 }
-
-                return new ResultStatus(code, description ?? string.Empty);
+                return ResultStatuses.GetStatus(code, description ?? string.Empty);
             }
 
-            /// <summary>Deserializes a list of <see cref="ErrorInfo"/> objects from the JSON reader.</summary>
-            /// <param name="reader">The JSON reader.</param>
-            /// <param name="options">The serializer options.</param>
-            /// <returns>A list of <see cref="ErrorInfo"/> objects, or <c>null</c> if not present.</returns>
+            /// <summary>
+            /// Deserializes a list of <see cref="ErrorInfo"/> from a JSON array.
+            /// </summary>
+            /// <param name="reader">The <see cref="Utf8JsonReader"/> to read from.</param>
+            /// <param name="options">The <see cref="JsonSerializerOptions"/> to use.</param>
+            /// <returns>A <see cref="List{ErrorInfo}"/> deserialized from the JSON array, or <c>null</c> if the token is not a StartArray.</returns>
             private List<ErrorInfo>? DeserializeErrorInfoList(ref Utf8JsonReader reader, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartArray)
@@ -201,7 +240,6 @@ namespace Zentient.Results
                     {
                         break;
                     }
-
                     if (reader.TokenType == JsonTokenType.StartObject)
                     {
                         ErrorInfo? errorInfo = ReadErrorInfo(ref reader, options);
@@ -218,10 +256,14 @@ namespace Zentient.Results
                 return errorList;
             }
 
-            /// <summary>Reads a single <see cref="ErrorInfo"/> object from the JSON reader.</summary>
-            /// <param name="reader">The JSON reader.</param>
-            /// <param name="options">The serializer options.</param>
-            /// <returns>The deserialized <see cref="ErrorInfo"/>, or <c>null</c> if not present.</returns>
+            /// <summary>
+            /// Reads a single <see cref="ErrorInfo"/> object from the JSON.
+            /// </summary>
+            /// <param name="reader">The <see cref="Utf8JsonReader"/> to read from.</param>
+            /// <param name="options">The <see cref="JsonSerializerOptions"/> to use.</param>
+            /// <returns>A new <see cref="ErrorInfo"/> instance deserialized from the JSON, or <c>null</c> if not found or invalid.</returns>
+            /// <exception cref="JsonException">Thrown if the JSON is malformed for an ErrorInfo object.</exception>
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "<Pending>")]
             private ErrorInfo? ReadErrorInfo(ref Utf8JsonReader reader, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartObject)
@@ -233,68 +275,93 @@ namespace Zentient.Results
                 ErrorCategory category = default;
                 string? code = null;
                 string? message = null;
+                string? detail = null;
                 object? data = null;
                 List<ErrorInfo>? innerErrors = null;
+                Dictionary<string, object?> extensions = new Dictionary<string, object?>();
 
-                while (reader.Read())
+                using (JsonDocument doc = JsonDocument.ParseValue(ref reader))
                 {
-                    if (reader.TokenType == JsonTokenType.EndObject)
+                    JsonElement root = doc.RootElement;
+                    foreach (JsonProperty property in root.EnumerateObject())
                     {
-                        break;
-                    }
-
-                    if (reader.TokenType == JsonTokenType.PropertyName)
-                    {
-                        string propertyName = reader.GetString()!;
-                        reader.Read();
-
-                        switch (propertyName)
+                        switch (property.Name.ToLowerInvariant())
                         {
                             case "category":
-                                if (reader.TokenType == JsonTokenType.Number)
+                                if (property.Value.ValueKind == JsonValueKind.Number)
                                 {
-                                    category = (ErrorCategory)reader.GetInt32();
+                                    category = (ErrorCategory)property.Value.GetInt32();
+                                }
+                                else if (property.Value.ValueKind == JsonValueKind.String)
+                                {
+                                    if (Enum.TryParse(property.Value.GetString(), true, out ErrorCategory parsedCategory))
+                                    {
+                                        category = parsedCategory;
+                                    }
                                 }
                                 break;
                             case "code":
-                                code = reader.GetString();
+                                code = property.Value.GetString();
                                 break;
                             case "message":
-                                message = reader.GetString();
+                                message = property.Value.GetString();
+                                break;
+                            case "detail":
+                                detail = property.Value.GetString();
                                 break;
                             case "data":
-                                data = JsonSerializer.Deserialize<object>(ref reader, options);
+                                data = JsonSerializer.Deserialize<object>(property.Value.GetRawText(), _options);
                                 break;
-                            case "innerErrors":
-                                innerErrors = DeserializeErrorInfoList(ref reader, options);
+                            case "extensions":
+                                extensions = JsonSerializer.Deserialize<Dictionary<string, object?>>(property.Value.GetRawText(), _options) ?? new Dictionary<string, object?>();
+                                break;
+                            case "innererrors":
+                                innerErrors = JsonSerializer.Deserialize<List<ErrorInfo>>(property.Value.GetRawText(), _options);
                                 break;
                             default:
-                                reader.Skip();
+                                extensions[property.Name] = JsonSerializer.Deserialize<object>(property.Value.GetRawText(), _options);
                                 break;
                         }
                     }
                 }
-                return new ErrorInfo(category, code ?? string.Empty, message ?? string.Empty, data: data, innerErrors: innerErrors);
+
+                return new ErrorInfo(
+                category,
+                code ?? string.Empty,
+                message ?? string.Empty,
+                detail,
+                data,
+                extensions: extensions.Count == 0 ? extensions : null,
+                innerErrors: innerErrors
+                );
             }
 
-            /// <summary>Converts a property name using the serializer's naming policy, if any.</summary>
-            /// <param name="options">The serializer options.</param>
-            /// <param name="name">The property name to convert.</param>
+            /// <summary>
+            /// Converts a property name based on the specified JSON naming policy.
+            /// </summary>
+            /// <param name="options">The <see cref="JsonSerializerOptions"/> containing the naming policy.</param>
+            /// <param name="name">The original property name.</param>
             /// <returns>The converted property name.</returns>
-            private string ConvertName(JsonSerializerOptions options, string name)
+            private static string ConvertName(JsonSerializerOptions options, string name)
             {
                 return options.PropertyNamingPolicy?.ConvertName(name) ?? name;
             }
         }
 
-        /// <summary>Handles serialization and deserialization for generic <see cref="Result{TValue}"/> types.</summary>
-        /// <typeparam name="TValue">The type of the value encapsulated by the result.</typeparam>
-        private class ResultGenericJsonConverter<TValue> : JsonConverter<Result<TValue>>
+        /// <summary>
+        /// Internal converter for the generic <see cref="Result{T}"/> type.
+        /// Handles the serialization and deserialization of <see cref="Result{T}"/> instances.
+        /// </summary>
+        /// <typeparam name="TValue">The type of the value held by the result.</typeparam>
+        private sealed class ResultGenericJsonConverter<TValue> : JsonConverter<Result<TValue>>
         {
             private readonly JsonSerializerOptions _options;
 
-            /// <summary>Initializes a new instance of the <see cref="ResultGenericJsonConverter{TValue}"/> class.</summary>
-            /// <param name="options">The serializer options.</param>
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ResultGenericJsonConverter{TValue}"/> class.
+            /// </summary>
+            /// <param name="options">The <see cref="JsonSerializerOptions"/> being used for serialization.</param>
+            /// <exception cref="ArgumentNullException">Thrown if <paramref name="options"/> is <c>null</c>.</exception>
             public ResultGenericJsonConverter(JsonSerializerOptions options)
             {
                 _options = new JsonSerializerOptions(options);
@@ -302,11 +369,20 @@ namespace Zentient.Results
             }
 
             /// <inheritdoc/>
+            /// <summary>
+            /// Reads a <see cref="Result{TValue}"/> object from the JSON.
+            /// </summary>
+            /// <param name="reader">The <see cref="Utf8JsonReader"/> to read from.</param>
+            /// <param name="typeToConvert">The type of the object to convert.</param>
+            /// <param name="options">The <see cref="JsonSerializerOptions"/> to use.</param>
+            /// <returns>A new <see cref="Result{TValue}"/> instance deserialized from the JSON.</returns>
+            /// <exception cref="JsonException">Thrown if the JSON is not in the expected format.</exception>
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "<Pending>")]
             public override Result<TValue> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartObject)
                 {
-                    throw new JsonException("Expected StartObject token.");
+                    throw new JsonException("Expected StartObject token for Result<TValue>.");
                 }
 
                 TValue? value = default;
@@ -326,19 +402,24 @@ namespace Zentient.Results
                         string propertyName = reader.GetString()!;
                         reader.Read();
 
-                        switch (propertyName)
+                        switch (propertyName.ToLowerInvariant())
                         {
                             case "value":
-                                value = JsonSerializer.Deserialize<TValue>(ref reader, options);
+                                value = JsonSerializer.Deserialize<TValue>(ref reader, _options);
                                 break;
                             case "status":
-                                status = ReadStatus(ref reader, options);
+                                status = ReadStatus(ref reader, _options);
                                 break;
                             case "errors":
-                                errors = DeserializeErrorInfoList(ref reader, options);
+                                errors = DeserializeErrorInfoList(ref reader, _options);
                                 break;
                             case "messages":
-                                messages = JsonSerializer.Deserialize<List<string>>(ref reader, options);
+                                messages = JsonSerializer.Deserialize<List<string>>(ref reader, _options);
+                                break;
+                            case "issuccess":
+                            case "isfailure":
+                            case "errormessage":
+                                reader.Skip();
                                 break;
                             default:
                                 reader.Skip();
@@ -347,49 +428,66 @@ namespace Zentient.Results
                     }
                 }
 
-                if (status == null)
-                {
-                    status = ResultStatuses.Error;
-                    errors ??= new List<ErrorInfo> { new ErrorInfo(ErrorCategory.General, "DeserializationError", "Could not determine result status during deserialization.") };
-                }
-
-                return new Result<TValue>(value, status, messages, errors);
+                return new Result<TValue>(value, status ?? ResultStatuses.Error, messages, errors);
             }
 
             /// <inheritdoc/>
+            /// <summary>
+            /// Writes a <see cref="Result{TValue}"/> object to the JSON.
+            /// </summary>
+            /// <param name="writer">The <see cref="Utf8JsonWriter"/> to write to.</param>
+            /// <param name="value">The <see cref="Result{TValue}"/> instance to serialize.</param>
+            /// <param name="options">The <see cref="JsonSerializerOptions"/> to use.</param>
+            /// <exception cref="ArgumentNullException">Thrown if <paramref name="writer"/> is <c>null</c>.</exception>
             public override void Write(Utf8JsonWriter writer, Result<TValue> value, JsonSerializerOptions options)
             {
+                ArgumentNullException.ThrowIfNull(writer, nameof(writer));
+
                 writer.WriteStartObject();
-                writer.WritePropertyName(ConvertName(options, nameof(IResult.IsSuccess)));
+
+                if (value.Value is not null || typeof(TValue).IsValueType && Nullable.GetUnderlyingType(typeof(TValue)) == null)
+                {
+                    writer.WritePropertyName(ConvertName(_options, nameof(IResult<TValue>.Value)));
+                    JsonSerializer.Serialize(writer, value.Value, _options);
+                }
+
+                writer.WritePropertyName(ConvertName(_options, nameof(IResult.IsSuccess)));
                 writer.WriteBooleanValue(value.IsSuccess);
-                writer.WritePropertyName(ConvertName(options, nameof(IResult.IsFailure)));
+
+                writer.WritePropertyName(ConvertName(_options, nameof(IResult.IsFailure)));
                 writer.WriteBooleanValue(value.IsFailure);
-                writer.WritePropertyName(ConvertName(options, nameof(IResult.Status)));
+
+                writer.WritePropertyName(ConvertName(_options, nameof(IResult.Status)));
                 JsonSerializer.Serialize(writer, value.Status, value.Status.GetType(), _options);
 
                 if (value.Messages.Any())
                 {
-                    writer.WritePropertyName(ConvertName(options, nameof(IResult.Messages)));
+                    writer.WritePropertyName(ConvertName(_options, nameof(IResult.Messages)));
                     JsonSerializer.Serialize(writer, value.Messages, _options);
                 }
 
                 if (value.Errors.Any())
                 {
-                    writer.WritePropertyName(ConvertName(options, nameof(IResult.Errors)));
+                    writer.WritePropertyName(ConvertName(_options, nameof(IResult.Errors)));
                     JsonSerializer.Serialize(writer, value.Errors, _options);
                 }
 
-                writer.WritePropertyName(ConvertName(options, nameof(IResult<TValue>.Value)));
-                JsonSerializer.Serialize(writer, value.Value, _options);
+                if (value.ErrorMessage != null)
+                {
+                    writer.WritePropertyName(ConvertName(_options, nameof(IResult.ErrorMessage)));
+                    writer.WriteStringValue(value.ErrorMessage);
+                }
 
                 writer.WriteEndObject();
             }
 
-            /// <summary>Reads a <see cref="IResultStatus"/> object from the JSON reader.</summary>
-            /// <param name="reader">The JSON reader.</param>
-            /// <param name="options">The serializer options.</param>
-            /// <returns>The deserialized <see cref="IResultStatus"/>.</returns>
-            private IResultStatus? ReadStatus(ref Utf8JsonReader reader, JsonSerializerOptions options)
+            /// <summary>
+            /// Reads an <see cref="IResultStatus"/> object from the JSON.
+            /// </summary>
+            /// <param name="reader">The <see cref="Utf8JsonReader"/> to read from.</param>
+            /// <param name="options">The <see cref="JsonSerializerOptions"/> to use.</param>
+            /// <returns>A new <see cref="IResultStatus"/> instance deserialized from the JSON, or <c>null</c> if not found or invalid.</returns>
+            private static IResultStatus? ReadStatus(ref Utf8JsonReader reader, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartObject)
                 {
@@ -400,40 +498,28 @@ namespace Zentient.Results
                 int code = 0;
                 string? description = null;
 
-                while (reader.Read())
+                using (JsonDocument doc = JsonDocument.ParseValue(ref reader))
                 {
-                    if (reader.TokenType == JsonTokenType.EndObject)
+                    JsonElement root = doc.RootElement;
+                    if (root.TryGetProperty("code", out JsonElement codeElement))
                     {
-                        break;
+                        code = codeElement.GetInt32();
                     }
-
-                    if (reader.TokenType == JsonTokenType.PropertyName)
+                    if (root.TryGetProperty("description", out JsonElement descriptionElement))
                     {
-                        string propertyName = reader.GetString()!;
-                        reader.Read();
-
-                        switch (propertyName)
-                        {
-                            case "code":
-                                code = reader.GetInt32();
-                                break;
-                            case "description":
-                                description = reader.GetString();
-                                break;
-                            default:
-                                reader.Skip();
-                                break;
-                        }
+                        description = descriptionElement.GetString();
                     }
                 }
 
-                return new ResultStatus(code, description ?? string.Empty);
+                return ResultStatuses.GetStatus(code, description ?? string.Empty);
             }
 
-            /// <summary>Deserializes a list of <see cref="ErrorInfo"/> objects from the JSON reader.</summary>
-            /// <param name="reader">The JSON reader.</param>
-            /// <param name="options">The serializer options.</param>
-            /// <returns>A list of <see cref="ErrorInfo"/> objects, or <c>null</c> if not present.</returns>
+            /// <summary>
+            /// Deserializes a list of <see cref="ErrorInfo"/> from a JSON array.
+            /// </summary>
+            /// <param name="reader">The <see cref="Utf8JsonReader"/> to read from.</param>
+            /// <param name="options">The <see cref="JsonSerializerOptions"/> to use.</param>
+            /// <returns>A <see cref="List{ErrorInfo}"/> deserialized from the JSON array, or <c>null</c> if the token is not a StartArray.</returns>
             private List<ErrorInfo>? DeserializeErrorInfoList(ref Utf8JsonReader reader, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartArray)
@@ -443,13 +529,13 @@ namespace Zentient.Results
                 }
 
                 var errorList = new List<ErrorInfo>();
+
                 while (reader.Read())
                 {
                     if (reader.TokenType == JsonTokenType.EndArray)
                     {
                         break;
                     }
-
                     if (reader.TokenType == JsonTokenType.StartObject)
                     {
                         ErrorInfo? errorInfo = ReadErrorInfo(ref reader, options);
@@ -466,10 +552,14 @@ namespace Zentient.Results
                 return errorList;
             }
 
-            /// <summary>Reads a single <see cref="ErrorInfo"/> object from the JSON reader.</summary>
-            /// <param name="reader">The JSON reader.</param>
-            /// <param name="options">The serializer options.</param>
-            /// <returns>The deserialized <see cref="ErrorInfo"/>, or <c>null</c> if not present.</returns>
+            /// <summary>
+            /// Reads a single <see cref="ErrorInfo"/> object from the JSON.
+            /// </summary>
+            /// <param name="reader">The <see cref="Utf8JsonReader"/> to read from.</param>
+            /// <param name="options">The <see cref="JsonSerializerOptions"/> to use.</param>
+            /// <returns>A new <see cref="ErrorInfo"/> instance deserialized from the JSON, or <c>null</c> if not found or invalid.</returns>
+            /// <exception cref="JsonException">Thrown if the JSON is malformed for an ErrorInfo object.</exception>
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "<Pending>")]
             private ErrorInfo? ReadErrorInfo(ref Utf8JsonReader reader, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartObject)
@@ -481,56 +571,90 @@ namespace Zentient.Results
                 ErrorCategory category = default;
                 string? code = null;
                 string? message = null;
+                string? detail = null;
                 object? data = null;
                 List<ErrorInfo>? innerErrors = null;
+                Dictionary<string, object?> extensions = new Dictionary<string, object?>();
 
-                while (reader.Read())
+                using (JsonDocument doc = JsonDocument.ParseValue(ref reader))
                 {
-                    if (reader.TokenType == JsonTokenType.EndObject)
+                    JsonElement root = doc.RootElement;
+                    foreach (JsonProperty property in root.EnumerateObject())
                     {
-                        break;
-                    }
-
-                    if (reader.TokenType == JsonTokenType.PropertyName)
-                    {
-                        string propertyName = reader.GetString()!;
-                        reader.Read();
-
-                        switch (propertyName)
+                        switch (property.Name.ToLowerInvariant())
                         {
-                            case "category":
-                                if (reader.TokenType == JsonTokenType.Number)
+                            case JsonConstants.ErrorInfo.Category:
+                                if (property.Value.ValueKind == JsonValueKind.Number)
                                 {
-                                    category = (ErrorCategory)reader.GetInt32();
+                                    category = (ErrorCategory)property.Value.GetInt32();
+                                }
+                                else if (property.Value.ValueKind == JsonValueKind.String)
+                                {
+                                    if (Enum.TryParse(property.Value.GetString(), true, out ErrorCategory parsedCategory))
+                                    {
+                                        category = parsedCategory;
+                                    }
                                 }
                                 break;
-                            case "code":
-                                code = reader.GetString();
+                            case JsonConstants.ErrorInfo.Code:
+                                code = property.Value.GetString();
                                 break;
-                            case "message":
-                                message = reader.GetString();
+                            case JsonConstants.ErrorInfo.Message:
+                                message = property.Value.GetString();
                                 break;
-                            case "data":
-                                data = JsonSerializer.Deserialize<object>(ref reader, options);
+                            case JsonConstants.ErrorInfo.Detail:
+                                detail = property.Value.GetString();
                                 break;
-                            case "innerErrors":
-                                innerErrors = DeserializeErrorInfoList(ref reader, options);
+                            case JsonConstants.ErrorInfo.Data:
+                                data = JsonSerializer.Deserialize<object>(property.Value.GetRawText(), _options);
+                                break;
+                            case JsonConstants.ErrorInfo.Extensions:
+                                extensions = JsonSerializer.Deserialize<Dictionary<string, object?>>(property.Value.GetRawText(), _options) ?? new Dictionary<string, object?>();
+                                break;
+                            case JsonConstants.ErrorInfo.InnerErrors:
+                                innerErrors = JsonSerializer.Deserialize<List<ErrorInfo>>(property.Value.GetRawText(), _options);
                                 break;
                             default:
-                                reader.Skip();
+                                extensions[property.Name] = JsonSerializer.Deserialize<object>(property.Value.GetRawText(), _options);
                                 break;
                         }
                     }
                 }
-                return new ErrorInfo(category, code ?? string.Empty, message ?? string.Empty, data: data, innerErrors: innerErrors);
+
+                return new ErrorInfo(
+                category,
+                code ?? string.Empty,
+                message ?? string.Empty,
+                detail,
+                data,
+                extensions: extensions.Count == 0 ? extensions : null,
+                innerErrors: innerErrors
+                );
             }
 
-            /// <summary>Converts a property name using the serializer's naming policy, if any.</summary>
-            /// <param name="options">The serializer options.</param>
-            /// <param name="name">The property name to convert.</param>
+            /// <summary>
+            /// Converts a property name based on the specified JSON naming policy.
+            /// </summary>
+            /// <param name="options">The <see cref="JsonSerializerOptions"/> containing the naming policy.</param>
+            /// <param name="name">The original property name.</param>
             /// <returns>The converted property name.</returns>
-            private string ConvertName(JsonSerializerOptions options, string name)
-                => options.PropertyNamingPolicy?.ConvertName(name) ?? name;
+            private static string ConvertName(JsonSerializerOptions options, string name)
+            {
+                return options.PropertyNamingPolicy?.ConvertName(name) ?? name;
+            }
+        }
+
+        /// <summary>
+        /// Internal DTO to deserialize <see cref="IResultStatus"/> as a concrete type.
+        /// This is necessary because <see cref="IResultStatus"/> is an interface.
+        /// </summary>
+        private sealed class ResultStatusInternal : IResultStatus
+        {
+            /// <inheritdoc/>
+            public int Code { get; set; }
+
+            /// <inheritdoc/>
+            public string Description { get; set; } = string.Empty;
         }
     }
 }
