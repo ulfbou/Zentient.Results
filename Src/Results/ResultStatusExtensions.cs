@@ -12,6 +12,9 @@
         /// <param name="status">The result status.</param>
         /// <returns>The integer HTTP status code.</returns>
         public static int ToHttpStatusCode(this IResultStatus status)
-            => status.Code;
+        {
+            ArgumentNullException.ThrowIfNull(status, nameof(status));
+            return status.Code;
+        }
     }
 }
