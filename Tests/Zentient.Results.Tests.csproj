@@ -24,10 +24,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Zentient.Results" Version="0.2.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\Src\AspNetCore\Zentient.Results.AspNetCore.csproj" />
+		<!--<PackageReference Include="Zentient.Results" Version="0.2.0" />-->
+		<ProjectReference  Include="..\Src\Results\Zentient.Results.csproj">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</ProjectReference>
 	</ItemGroup>
 </Project>
