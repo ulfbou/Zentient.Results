@@ -1,5 +1,9 @@
 # Zentient.Results
 
+[![NuGet](https://img.shields.io/nuget/v/Zentient.Results?label=Zentient.Results)](https://www.nuget.org/packages/Zentient.Results)
+![License](https://img.shields.io/github/license/ulfbou/Zentient.Results)
+![.NET Versions](![.NET Versions](https://img.shields.io/badge/.NET-6.0%20%7C%207.0%20%7C%208.0%20%7C%209.0-blue)
+
 [![NuGet Version](https://buildstats.info/nuget/Zentient.Results)](https://www.nuget.org/packages/Zentient.Results/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/ulfbou/Zentient.Results/blob/main/LICENSE)
 
