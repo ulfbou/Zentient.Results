@@ -73,16 +73,15 @@ namespace Zentient.Results
             string code,
             string message,
             string? detail = null,
-            IReadOnlyDictionary<string, object?>? metadata = null,
-            IReadOnlyList<ErrorInfo>? innerErrors = null)
+            IImmutableDictionary<string, object?>? metadata = null,
+            IImmutableList<ErrorInfo>? innerErrors = null)
         {
             Category = category;
             Code = code ?? throw new ArgumentNullException(nameof(code));
             Message = message ?? throw new ArgumentNullException(nameof(message));
             Detail = detail;
-            // Ensure collections are truly immutable and never null
-            Metadata = metadata?.ToImmutableDictionary() ?? ImmutableDictionary<string, object?>.Empty;
-            InnerErrors = innerErrors?.ToImmutableList() ?? ImmutableList<ErrorInfo>.Empty;
+            Metadata = metadata ?? ImmutableDictionary<string, object?>.Empty;
+            InnerErrors = innerErrors ?? ImmutableList<ErrorInfo>.Empty;
         }
 
         /// <summary>
@@ -133,7 +132,7 @@ namespace Zentient.Results
         /// <param name="detail">Optional, more granular details.</param>
         /// <param name="metadata">Optional dictionary of structured metadata (e.g., field-specific errors).</param>
         public static ErrorInfo Validation(string? message = null, string? code = null, string? detail = null, IReadOnlyDictionary<string, object?>? metadata = null) =>
-            new ErrorInfo(ErrorCategory.Validation, code ?? ErrorCodes.Validation, message ?? "One or more validation errors occurred.", detail, metadata);
+            new ErrorInfo(ErrorCategory.Validation, code ?? ErrorCodes.Validation, message ?? "One or more validation errors occurred.", detail, metadata?.ToImmutableDictionary());
 
         /// <summary>Creates a not found error.</summary>
         /// <param name="message">The not found error message. Defaults to a generic not found message.</param>
@@ -187,7 +186,7 @@ namespace Zentient.Results
                 code ?? ex.GetType().Name ?? Constants.ErrorCodes.Exception,
                 message ?? ex!.Message!,
                 detail: ex.StackTrace,
-                metadata: metadata);
+                metadata: metadata?.ToImmutableDictionary());
         }
 
         /// <inheritdoc />
@@ -261,8 +260,11 @@ namespace Zentient.Results
             return hash.ToHashCode();
         }
 
-        internal static ErrorInfo Unauthorized(string message, string? code) => throw new NotImplementedException();
-        internal static ErrorInfo Forbidden(string message, string? code) => throw new NotImplementedException();
+        internal static ErrorInfo Unauthorized(string message, string? code) =>
+            new ErrorInfo(ErrorCategory.Authentication, code ?? ErrorCodes.Unauthorized, message ?? "Authentication required or failed.");
+
+        internal static ErrorInfo Forbidden(string message, string? code) =>
+            new ErrorInfo(ErrorCategory.Authorization, code ?? ErrorCodes.Forbidden, message ?? "You do not have permission to perform this action.");
 
         /// <inheritdoc />
         public static bool operator ==(ErrorInfo? left, ErrorInfo? right)
