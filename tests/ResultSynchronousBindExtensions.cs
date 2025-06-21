@@ -51,7 +51,7 @@ namespace Zentient.Results.Tests
             var originalError = CreateErrorInfo("ORIGINAL_ERROR", "Failed at step 1.", ErrorCategory.General);
             IResult<string> initialResult = Result<string>.Failure(originalError);
             var binderExecuted = false;
-            Func<string, IResult> binder = s => { binderExecuted = true; return Result.Success(); }; // This should not execute
+            Func<string, IResult> binder = s => { binderExecuted = true; return Result.Success(); };
 
             // Act
             IResult finalResult = initialResult.Bind(binder);
@@ -192,7 +192,7 @@ namespace Zentient.Results.Tests
 
             // Assert
             finalResult.IsFailure.Should().BeTrue();
-            finalResult.Value.Should().BeNull(); // Default for string
+            finalResult.Value.Should().BeNull();
             finalResult.Errors.Should().ContainSingle(e => e.Equals(originalError));
             binderExecuted.Should().BeFalse();
         }

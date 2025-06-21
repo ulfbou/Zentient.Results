@@ -21,8 +21,8 @@ namespace Zentient.Results.Tests
             var category = ErrorCategory.Database;
             var code = "DB-001";
             var message = "Database error occurred.";
-            var data = new { Table = "Users" }; // Old 'Data' object
-            var metadata = new Dictionary<string, object?> { { "Query", "SELECT * FROM Users" } }; // New 'Metadata'
+            var data = new { Table = "Users" };
+            var metadata = new Dictionary<string, object?> { { "Query", "SELECT * FROM Users" } };
             var innerErrors = new List<ErrorInfo>
             {
                 new ErrorInfo(ErrorCategory.Validation, "VAL-001", "Validation failed.")
@@ -38,7 +38,7 @@ namespace Zentient.Results.Tests
             error.Code.Should().Be(code);
             error.Message.Should().Be(message);
             error.Detail.Should().Be("Detailed DB error");
-            error.Metadata.Should().BeEquivalentTo(metadata); // New assertion for Metadata
+            error.Metadata.Should().BeEquivalentTo(metadata);
             error.InnerErrors.Should().BeEquivalentTo(innerErrors);
         }
 
@@ -50,9 +50,6 @@ namespace Zentient.Results.Tests
             error.InnerErrors.Should().NotBeNull();
             error.InnerErrors.Should().BeEmpty();
         }
-
-        // REMOVED: Aggregate_Creates_Validation_Error_With_InnerErrors - Method 'Aggregate' no longer exists on ErrorInfo.
-        // REMOVED: Aggregate_Can_Include_Optional_Data - Method 'Aggregate' no longer exists on ErrorInfo.
 
         [Fact]
         public void ToString_Returns_Expected_Format()

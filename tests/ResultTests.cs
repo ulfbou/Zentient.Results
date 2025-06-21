@@ -181,7 +181,6 @@ namespace Zentient.Results.Tests
         [Fact]
         public void IsSuccess_False_If_Status_2xx_But_HasErrors()
         {
-            // Use the public Failure factory to create a result with errors and a 2xx status
             var result = Result.Failure(SampleError, SuccessStatus);
             result.IsSuccess.Should().BeFalse();
             result.IsFailure.Should().BeTrue();
