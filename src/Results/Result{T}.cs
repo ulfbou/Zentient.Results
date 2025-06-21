@@ -38,7 +38,7 @@ namespace Zentient.Results
             IResultStatus status,
             IEnumerable<string>? messages = null,
             IEnumerable<ErrorInfo>? errors = null)
-            : base(status, messages, errors) // Call base constructor
+            : base(status, messages, errors)
         {
             Value = value;
         }
@@ -372,7 +372,6 @@ namespace Zentient.Results
                 return true;
             }
 
-            // Call base class Equals first, then compare TValue
             return base.Equals(other) &&
                    EqualityComparer<T?>.Default.Equals(Value, other.Value);
         }
@@ -381,7 +380,7 @@ namespace Zentient.Results
         public override int GetHashCode()
         {
             var hash = new HashCode();
-            hash.Add(base.GetHashCode()); // Include base hash code
+            hash.Add(base.GetHashCode());
             hash.Add(Value);
             return hash.ToHashCode();
         }

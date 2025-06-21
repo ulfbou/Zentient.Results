@@ -261,10 +261,8 @@ namespace Zentient.Results
         {
             ArgumentNullException.ThrowIfNull(ex, nameof(ex));
 
-            // Ensure the exception's message is passed as the primary message to ErrorInfo.FromException
-            // ErrorInfo.FromException was changed to default its 'message' param, so we need to explicitly pass ex.Message
-            var errorInfo = ErrorInfo.FromException(ex, message: ex.Message); // Pass ex.Message explicitly
-            return Failure(errorInfo, status ?? ResultStatuses.Error); // Use ResultStatuses.Error as default
+            var errorInfo = ErrorInfo.FromException(ex, message: ex.Message);
+            return Failure(errorInfo, status ?? ResultStatuses.Error);
         }
 
         /// <inheritdoc />
@@ -360,7 +358,7 @@ namespace Zentient.Results
             }
 
             return Status.Equals(other.Status) &&
-                   IsSuccess == other.IsSuccess && // Include IsSuccess in comparison
+                   IsSuccess == other.IsSuccess &&
                    _errors.SequenceEqual(other._errors) &&
                    _messages.SequenceEqual(other._messages);
         }
@@ -370,7 +368,7 @@ namespace Zentient.Results
         {
             var hash = new HashCode();
             hash.Add(Status);
-            hash.Add(IsSuccess); // Include IsSuccess in hash code
+            hash.Add(IsSuccess);
             foreach (var error in _errors)
             {
                 hash.Add(error);

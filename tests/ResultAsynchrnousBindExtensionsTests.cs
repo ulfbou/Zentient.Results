@@ -57,7 +57,7 @@ namespace Zentient.Results.Tests
             var binderExecuted = false;
             Func<string, Task<IResult<int>>> next = async s =>
             {
-                binderExecuted = true; // This should NOT be set
+                binderExecuted = true;
                 await Task.Delay(1);
                 return Result<int>.Success(0);
             };
@@ -67,7 +67,7 @@ namespace Zentient.Results.Tests
 
             // Assert
             finalResult.IsFailure.Should().BeTrue();
-            finalResult.Value.Should().Be(default(int)); // Value is default on failure
+            finalResult.Value.Should().Be(default(int));
             finalResult.Errors.Should().ContainSingle(e => e.Equals(originalError));
             binderExecuted.Should().BeFalse();
         }
@@ -134,7 +134,7 @@ namespace Zentient.Results.Tests
             var binderExecuted = false;
             Func<Task<IResult>> next = async () =>
             {
-                binderExecuted = true; // This should NOT be set
+                binderExecuted = true;
                 await Task.Delay(1);
                 return Result.Success();
             };

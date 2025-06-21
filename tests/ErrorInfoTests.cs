@@ -6,6 +6,7 @@ using FluentAssertions;
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 
 using Xunit;
@@ -20,8 +21,8 @@ namespace Zentient.Results.Tests
             var category = ErrorCategory.Database;
             var code = "DB-001";
             var message = "Database error occurred.";
-            var data = new { Table = "Users" }; // Old 'Data' object
-            var metadata = new Dictionary<string, object?> { { "Query", "SELECT * FROM Users" } }; // New 'Metadata'
+            var data = new { Table = "Users" };
+            var metadata = new Dictionary<string, object?> { { "Query", "SELECT * FROM Users" } };
             var innerErrors = new List<ErrorInfo>
             {
                 new ErrorInfo(ErrorCategory.Validation, "VAL-001", "Validation failed.")
@@ -29,15 +30,15 @@ namespace Zentient.Results.Tests
 
             // Adjusted constructor call to match the new ErrorInfo signature
             var error = new ErrorInfo(category, code, message,
-                                      detail: "Detailed DB error", // Added detail parameter
-                                      metadata: metadata,          // New metadata parameter
-                                      innerErrors: innerErrors);
+                                      detail: "Detailed DB error",
+                                      metadata: metadata.ToImmutableDictionary(),
+                                      innerErrors: innerErrors.ToImmutableArray());
 
             error.Category.Should().Be(category);
             error.Code.Should().Be(code);
             error.Message.Should().Be(message);
             error.Detail.Should().Be("Detailed DB error");
-            error.Metadata.Should().BeEquivalentTo(metadata); // New assertion for Metadata
+            error.Metadata.Should().BeEquivalentTo(metadata);
             error.InnerErrors.Should().BeEquivalentTo(innerErrors);
         }
 
@@ -50,24 +51,25 @@ namespace Zentient.Results.Tests
             error.InnerErrors.Should().BeEmpty();
         }
 
-        // REMOVED: Aggregate_Creates_Validation_Error_With_InnerErrors - Method 'Aggregate' no longer exists on ErrorInfo.
-        // REMOVED: Aggregate_Can_Include_Optional_Data - Method 'Aggregate' no longer exists on ErrorInfo.
-
         [Fact]
         public void ToString_Returns_Expected_Format()
         {
             var error = new ErrorInfo(ErrorCategory.Security, "SEC-001", "Security violation");
             var str = error.ToString();
-            // Updated assertion to match the new ToString() format in ErrorInfo
             str.Should().Be("ErrorInfo(Category: Security, Code: SEC-001, Message: Security violation)");
 
             var errorWithDetail = new ErrorInfo(ErrorCategory.Timeout, "TIMEOUT-001", "Request timed out", detail: "Network latency");
             errorWithDetail.ToString().Should().Be("ErrorInfo(Category: Timeout, Code: TIMEOUT-001, Message: Request timed out, Detail: Network latency)");
 
-            var errorWithMetadata = new ErrorInfo(ErrorCategory.General, "META-001", "Meta info", detail: null, metadata: new Dictionary<string, object?> { { "SessionId", "123" } });
-            errorWithMetadata.ToString().Should().Contain("Metadata: {SessionId=123}");
+            var errorWithMetadata = new ErrorInfo(
+                ErrorCategory.General,
+                "META-001",
+                "Meta info",
+                detail: null,
+                metadata: ImmutableDictionary.CreateRange<string, object?>(new[] { new KeyValuePair<string, object?>("SessionId", "123") }));
 
-            var errorWithInner = new ErrorInfo(ErrorCategory.General, "Parent", "Parent error", innerErrors: new[] { new ErrorInfo(ErrorCategory.General, "Child", "Child error") });
+            errorWithMetadata.ToString().Should().Contain("Metadata: {SessionId=123}");
+            var errorWithInner = new ErrorInfo(ErrorCategory.General, "Parent", "Parent error", innerErrors: ImmutableArray.Create<ErrorInfo>(new[] { new ErrorInfo(ErrorCategory.General, "Child", "Child error") }));
             errorWithInner.ToString().Should().Contain("Inner Errors: [ErrorInfo(Category: General, Code: Child, Message: Child error)]");
         }
 
@@ -75,8 +77,8 @@ namespace Zentient.Results.Tests
         public void InnerErrors_Can_Be_Nested()
         {
             var leaf = new ErrorInfo(ErrorCategory.Request, "REQ-001", "Bad request");
-            var mid = new ErrorInfo(ErrorCategory.Validation, "VAL-002", "Validation failed", innerErrors: new[] { leaf });
-            var root = new ErrorInfo(ErrorCategory.Exception, "EX-001", "Exception occurred", innerErrors: new[] { mid });
+            var mid = new ErrorInfo(ErrorCategory.Validation, "VAL-002", "Validation failed", innerErrors: ImmutableList.Create(leaf));
+            var root = new ErrorInfo(ErrorCategory.Exception, "EX-001", "Exception occurred", innerErrors: ImmutableList.Create(mid));
 
             root.InnerErrors.Should().HaveCount(1);
             root.InnerErrors[0].InnerErrors.Should().HaveCount(1);

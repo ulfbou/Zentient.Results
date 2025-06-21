@@ -4,7 +4,7 @@
 
 using FluentAssertions;
 
-using System.Reflection.PortableExecutable;
+using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -208,15 +208,13 @@ namespace Zentient.Results.Tests
         [Fact]
         public void Serialize_And_Deserialize_Complex_Generic_Result()
         {
-            // Corrected instantiation of ErrorInfo for innerErrors:
             var error = new ErrorInfo(
                 ErrorCategory.Database,
                 "DB",
                 "DB error",
-                null, // detail
-                metadata: new Dictionary<string, object?> { { "Table", "Users" } }, // Explicitly named 'data'
-                innerErrors: new[] { SampleError } // Explicitly named 'innerErrors'
-            );
+                null,
+                ImmutableDictionary.CreateRange<string, object?>(new[] { new KeyValuePair<string, object?>("Table", "Users") }),
+                ImmutableList.Create(SampleError));
             var result = new Result<List<string>>(new List<string> { "a", "b" }, BadRequestStatus, new[] { "msg" }, new[] { error });
             var json = JsonSerializer.Serialize(result, GetOptions());
             Result<List<string>>? deserialized = JsonSerializer.Deserialize<Result<List<string>>>(json, GetOptions());
@@ -245,12 +243,11 @@ namespace Zentient.Results.Tests
             var options = GetOptions();
             var json = "\"not an object\"";
 
-            // Use a local function that takes the reader by ref and call it directly
             Action act = () =>
             {
                 var reader = new Utf8JsonReader(System.Text.Encoding.UTF8.GetBytes(json));
                 var conv = (JsonConverter<Result>)converter.CreateConverter(typeof(Result), options)!;
-                reader.Read(); // Move to first token
+                reader.Read();
                 conv.Read(ref reader, typeof(Result), options);
             };
 
@@ -276,7 +273,7 @@ namespace Zentient.Results.Tests
             var deserialized = JsonSerializer.Deserialize<Result<string?>>(json, GetOptions());
             deserialized.Should().NotBeNull();
             deserialized.IsSuccess.Should().BeTrue();
-            deserialized.Value.Should().BeNull(); // Ensure null value is deserialized correctly
+            deserialized.Value.Should().BeNull();
             deserialized.Messages.Should().Contain("test");
         }
 
@@ -288,7 +285,7 @@ namespace Zentient.Results.Tests
             var json = JsonSerializer.Serialize(result, GetOptions());
 
             json.Should().Contain("\"isSuccess\":true");
-            json.Should().Contain("\"value\":{\"name\":\"Test\",\"id\":123}"); // Ensure custom object is serialized
+            json.Should().Contain("\"value\":{\"name\":\"Test\",\"id\":123}");
             json.Should().Contain("\"messages\":[\"Data found\"]");
         }
 
@@ -373,33 +370,29 @@ namespace Zentient.Results.Tests
         [Fact]
         public void Deserialize_Handles_Missing_IsSuccess_And_IsFailure_Flags()
         {
-            // Assuming default behavior should lean towards failure if flags are missing or inconsistent
-            // Or, the converter should infer based on presence of errors (if errors exist, it's failure)
             var jsonWithErrorsNoFlags = "{\"status\":{\"code\":400,\"description\":\"Bad Request\"},\"errors\":[{\"category\":0,\"code\":\"ERR\",\"message\":\"Test\"}]}";
             var deserializedErrors = JsonSerializer.Deserialize<Result>(jsonWithErrorsNoFlags, GetOptions());
             deserializedErrors.Should().NotBeNull();
-            deserializedErrors.IsFailure.Should().BeTrue(); // Should infer failure due to errors
+            deserializedErrors.IsFailure.Should().BeTrue();
 
             var jsonWithMessagesNoFlags = "{\"status\":{\"code\":200,\"description\":\"OK\"},\"messages\":[\"Test\"]}";
             var deserializedMessages = JsonSerializer.Deserialize<Result>(jsonWithMessagesNoFlags, GetOptions());
             deserializedMessages.Should().NotBeNull();
-            deserializedMessages.IsSuccess.Should().BeTrue(); // Should infer success due to messages/absence of errors
+            deserializedMessages.IsSuccess.Should().BeTrue();
         }
 
         [Fact]
         public void Deserialize_Handles_Inconsistent_IsSuccess_And_IsFailure_Flags()
         {
-            // isSuccess:true, isFailure:true
             var jsonBothTrue = "{\"isSuccess\":true,\"isFailure\":true,\"status\":{\"code\":200,\"description\":\"OK\"}}";
             var deserializedBothTrue = JsonSerializer.Deserialize<Result>(jsonBothTrue, GetOptions());
             deserializedBothTrue.Should().NotBeNull();
-            deserializedBothTrue.IsSuccess.Should().BeTrue(); // The converter logic should prioritize isSuccess
+            deserializedBothTrue.IsSuccess.Should().BeTrue();
 
-            // isSuccess:false, isFailure:false
             var jsonBothFalse = "{\"isSuccess\":false,\"isFailure\":false,\"status\":{\"code\":500,\"description\":\"Error\"},\"errors\":[{\"category\":0,\"code\":\"ERR\",\"message\":\"Test\"}]}";
             var deserializedBothFalse = JsonSerializer.Deserialize<Result>(jsonBothFalse, GetOptions());
             deserializedBothFalse.Should().NotBeNull();
-            deserializedBothFalse.IsFailure.Should().BeTrue(); // Should rely on presence of errors or default to failure if status is error
+            deserializedBothFalse.IsFailure.Should().BeTrue();
         }
     }
 }

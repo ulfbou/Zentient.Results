@@ -56,7 +56,7 @@ namespace Zentient.Results.Tests
         public void FromHttpStatusCode_ValidCode_ReturnsCorrectStatus()
         {
             // Arrange
-            var httpCode = (int)HttpStatusCode.OK; // 200
+            var httpCode = (int)HttpStatusCode.OK;
 
             // Act
             IResultStatus status = ResultStatus.FromHttpStatusCode(httpCode);
@@ -64,7 +64,6 @@ namespace Zentient.Results.Tests
             // Assert
             status.Code.Should().Be(httpCode);
             status.Description.Should().Be(HttpStatusCode.OK.ToString());
-            // status.Should().Be(ResultStatuses.Success);
         }
 
         [Fact]
