@@ -1,4 +1,8 @@
-﻿namespace Zentient.Results
+﻿// <copyright file="ResultStatusExtensions.cs" company="Zentient Framework Team">
+// Copyright © 2025 Zentient Framework Team. All rights reserved.
+// </copyright>
+
+namespace Zentient.Results
 {
     /// <summary>
     /// Provides extension methods for <see cref="IResultStatus"/>.
