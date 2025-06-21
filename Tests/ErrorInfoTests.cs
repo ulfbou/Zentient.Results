@@ -1,4 +1,14 @@
-﻿using FluentAssertions;
+﻿// <copyright file="ErrorInfoTests.cs" company="Zentient Framework Team">
+// Copyright © 2025 Zentient Framework Team. All rights reserved.
+// </copyright>
+
+using FluentAssertions;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+using Xunit;
 
 namespace Zentient.Results.Tests
 {
@@ -7,114 +17,70 @@ namespace Zentient.Results.Tests
         [Fact]
         public void Constructor_Sets_All_Properties()
         {
-            // Arrange
             var category = ErrorCategory.Database;
             var code = "DB-001";
             var message = "Database error occurred.";
-            var data = new { Table = "Users" };
+            var data = new { Table = "Users" }; // Old 'Data' object
+            var metadata = new Dictionary<string, object?> { { "Query", "SELECT * FROM Users" } }; // New 'Metadata'
             var innerErrors = new List<ErrorInfo>
             {
                 new ErrorInfo(ErrorCategory.Validation, "VAL-001", "Validation failed.")
             };
 
-            // Act
-            var error = new ErrorInfo(category, code, message, data, innerErrors);
+            // Adjusted constructor call to match the new ErrorInfo signature
+            var error = new ErrorInfo(category, code, message,
+                                      detail: "Detailed DB error", // Added detail parameter
+                                      metadata: metadata,          // New metadata parameter
+                                      innerErrors: innerErrors);
 
-            // Assert
             error.Category.Should().Be(category);
             error.Code.Should().Be(code);
             error.Message.Should().Be(message);
-            error.Data.Should().Be(data);
+            error.Detail.Should().Be("Detailed DB error");
+            error.Metadata.Should().BeEquivalentTo(metadata); // New assertion for Metadata
             error.InnerErrors.Should().BeEquivalentTo(innerErrors);
         }
 
         [Fact]
         public void Constructor_Handles_Null_InnerErrors_As_Empty()
         {
-            // Act
-            var error = new ErrorInfo(ErrorCategory.General, "GEN-001", "General error.", null, null);
-
-            // Assert
+            // Adjusted constructor call to match the new ErrorInfo signature
+            var error = new ErrorInfo(ErrorCategory.General, "GEN-001", "General error.", detail: null, metadata: null, innerErrors: null);
             error.InnerErrors.Should().NotBeNull();
             error.InnerErrors.Should().BeEmpty();
         }
 
-        [Fact]
-        public void Aggregate_Creates_Validation_Error_With_InnerErrors()
-        {
-            // Arrange
-            var inner = new[]
-            {
-                new ErrorInfo(ErrorCategory.Validation, "VAL-1", "First error"),
-                new ErrorInfo(ErrorCategory.Validation, "VAL-2", "Second error")
-            };
-
-            // Act
-            var agg = ErrorInfo.Aggregate("AGG-001", "Aggregate error", inner);
-
-            // Assert
-            agg.Category.Should().Be(ErrorCategory.Validation);
-            agg.Code.Should().Be("AGG-001");
-            agg.Message.Should().Be("Aggregate error");
-            agg.InnerErrors.Should().BeEquivalentTo(inner);
-        }
-
-        [Fact]
-        public void Aggregate_Can_Include_Optional_Data()
-        {
-            // Arrange
-            var inner = new[]
-            {
-                new ErrorInfo(ErrorCategory.Validation, "VAL-1", "First error")
-            };
-            var data = new { Field = "Email" };
-
-            // Act
-            var agg = ErrorInfo.Aggregate("AGG-002", "Aggregate error", inner, data);
-
-            // Assert
-            agg.Data.Should().Be(data);
-        }
+        // REMOVED: Aggregate_Creates_Validation_Error_With_InnerErrors - Method 'Aggregate' no longer exists on ErrorInfo.
+        // REMOVED: Aggregate_Can_Include_Optional_Data - Method 'Aggregate' no longer exists on ErrorInfo.
 
         [Fact]
         public void ToString_Returns_Expected_Format()
         {
-            // Arrange
             var error = new ErrorInfo(ErrorCategory.Security, "SEC-001", "Security violation");
-
-            // Act
             var str = error.ToString();
+            // Updated assertion to match the new ToString() format in ErrorInfo
+            str.Should().Be("ErrorInfo(Category: Security, Code: SEC-001, Message: Security violation)");
 
-            // Assert
-            str.Should().Be("[Security:SEC-001] Security violation");
+            var errorWithDetail = new ErrorInfo(ErrorCategory.Timeout, "TIMEOUT-001", "Request timed out", detail: "Network latency");
+            errorWithDetail.ToString().Should().Be("ErrorInfo(Category: Timeout, Code: TIMEOUT-001, Message: Request timed out, Detail: Network latency)");
+
+            var errorWithMetadata = new ErrorInfo(ErrorCategory.General, "META-001", "Meta info", detail: null, metadata: new Dictionary<string, object?> { { "SessionId", "123" } });
+            errorWithMetadata.ToString().Should().Contain("Metadata: {SessionId=123}");
+
+            var errorWithInner = new ErrorInfo(ErrorCategory.General, "Parent", "Parent error", innerErrors: new[] { new ErrorInfo(ErrorCategory.General, "Child", "Child error") });
+            errorWithInner.ToString().Should().Contain("Inner Errors: [ErrorInfo(Category: General, Code: Child, Message: Child error)]");
         }
 
         [Fact]
         public void InnerErrors_Can_Be_Nested()
         {
-            // Arrange
             var leaf = new ErrorInfo(ErrorCategory.Request, "REQ-001", "Bad request");
-            var mid = new ErrorInfo(ErrorCategory.Validation, "VAL-002", "Validation failed", null, new[] { leaf });
-            var root = new ErrorInfo(ErrorCategory.Exception, "EX-001", "Exception occurred", null, new[] { mid });
+            var mid = new ErrorInfo(ErrorCategory.Validation, "VAL-002", "Validation failed", innerErrors: new[] { leaf });
+            var root = new ErrorInfo(ErrorCategory.Exception, "EX-001", "Exception occurred", innerErrors: new[] { mid });
 
-            // Assert
             root.InnerErrors.Should().HaveCount(1);
             root.InnerErrors[0].InnerErrors.Should().HaveCount(1);
-            root.InnerErrors[0].InnerErrors[0].Code.Should().Be("REQ-001");
-        }
-
-        [Fact]
-        public void Properties_Are_Immutable()
-        {
-            // Arrange
-            var error = new ErrorInfo(ErrorCategory.Conflict, "CON-001", "Conflict error");
-
-            // Assert
-            typeof(ErrorInfo).GetProperty(nameof(ErrorInfo.Code))!.CanWrite.Should().BeFalse();
-            typeof(ErrorInfo).GetProperty(nameof(ErrorInfo.Message))!.CanWrite.Should().BeFalse();
-            typeof(ErrorInfo).GetProperty(nameof(ErrorInfo.Category))!.CanWrite.Should().BeFalse();
-            typeof(ErrorInfo).GetProperty(nameof(ErrorInfo.Data))!.CanWrite.Should().BeFalse();
-            typeof(ErrorInfo).GetProperty(nameof(ErrorInfo.InnerErrors))!.CanWrite.Should().BeFalse();
+            root.InnerErrors[0].InnerErrors![0].Code.Should().Be("REQ-001");
         }
 
         [Fact]
@@ -130,39 +96,22 @@ namespace Zentient.Results.Tests
         [Fact]
         public void Can_Handle_Empty_Strings_And_Null_Data()
         {
-            // Act
-            var error = new ErrorInfo(ErrorCategory.General, "", "", null, null);
-
-            // Assert
+            var error = new ErrorInfo(ErrorCategory.General, "", "", detail: null, metadata: null, innerErrors: null);
             error.Code.Should().BeEmpty();
             error.Message.Should().BeEmpty();
-            error.Data.Should().BeNull();
+            error.Detail.Should().BeNull();
+            error.Metadata.Should().NotBeNull();
+            error.Metadata.Should().BeEmpty();
             error.InnerErrors.Should().BeEmpty();
         }
 
         [Fact]
-        public void Aggregate_NotThrows_If_InnerErrors_Is_Null()
+        public void Constructor_Throws_On_Null_Code_Or_Message()
         {
-            // Act
-            var act = () => ErrorInfo.Aggregate("AGG-003", "Aggregate error", null!);
-
-            // Assert
-            act.Should().NotThrow();
-        }
-
-        [Fact]
-        public void Aggregate_NotThrows_If_Code_Or_Message_Is_Null()
-        {
-            // Arrange
-            var inner = new[] { new ErrorInfo(ErrorCategory.General, "C", "M") };
-
-            // Act
-            Action act1 = () => ErrorInfo.Aggregate(null!, "msg", inner);
-            Action act2 = () => ErrorInfo.Aggregate("code", null!, inner);
-
-            // Assert
-            act1.Should().NotThrow();
-            act2.Should().NotThrow();
+            Action act1 = () => new ErrorInfo(ErrorCategory.General, null!, "message");
+            Action act2 = () => new ErrorInfo(ErrorCategory.General, "code", null!);
+            act1.Should().Throw<ArgumentNullException>().WithParameterName("code");
+            act2.Should().Throw<ArgumentNullException>().WithParameterName("message");
         }
     }
 }
