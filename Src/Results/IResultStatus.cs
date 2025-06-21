@@ -1,4 +1,8 @@
-﻿namespace Zentient.Results
+﻿// <copyright file="IResultStatus.cs" company="Zentient Framework Team">
+// Copyright © 2025 Zentient Framework Team. All rights reserved.
+// </copyright>
+
+namespace Zentient.Results
 {
     /// <summary>
     /// Defines the contract for a result status.
@@ -12,4 +16,3 @@
         string Description { get; }
     }
 }
-
