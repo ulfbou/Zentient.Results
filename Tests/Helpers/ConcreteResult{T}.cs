@@ -1,46 +1,38 @@
 ﻿namespace Zentient.Results.Tests.Helpers
 {
     /// <summary>
-    /// A concrete implementation of <see cref="IResult{T}"/> for use in tests.
-    /// This class provides a simple way to create results with a value, success status, and optional errors or messages, in a test environment.
+    /// A concrete internal implementation of IResult&lt;T&gt; for successful outcomes in tests.
     /// </summary>
-    /// <typeparam name="T">The type of the value returned on success.</typeparam>
     internal class ConcreteResult<T> : IResult<T>
     {
-        /// <inheritdoc />
-        public bool IsSuccess { get; init; }
-
-        /// <inheritdoc />
+        public T? Value { get; }
+        public bool IsSuccess { get; }
         public bool IsFailure => !IsSuccess;
+        public IResultStatus Status { get; }
+        public IReadOnlyList<ErrorInfo> Errors { get; }
+        public IReadOnlyList<string> Messages { get; }
 
-        /// <inheritdoc />
-        public IReadOnlyList<ErrorInfo> Errors { get; init; } = Array.Empty<ErrorInfo>();
+        private readonly Lazy<string?> _firstError;
+        public string? ErrorMessage => _firstError.Value;
 
-        /// <inheritdoc />
-        public IReadOnlyList<string> Messages { get; init; } = Array.Empty<string>();
+        // Constructor for a successful result with a value
+        public ConcreteResult(T? value, IResultStatus status, IReadOnlyList<string>? messages = null)
+        {
+            Value = value;
+            IsSuccess = true;
+            Status = status;
+            Messages = messages?.ToArray() ?? Array.Empty<string>();
+            Errors = Array.Empty<ErrorInfo>();
+            _firstError = new Lazy<string?>(() => null);
+        }
 
-        /// <inheritdoc />
-        public string? Error { get; init; }
+        // Minimal constructor for success, defaulting to 200 OK
+        public ConcreteResult(T? value) : this(value, new DummyStatus { Code = 200, Description = "OK" }) { }
 
-        /// <inheritdoc />
-        public IResultStatus Status { get; init; } = new MockResultStatus(200);
-
-        /// <inheritdoc />
-        public T? Value { get; init; }
-
-        /// <inheritdoc />
-        public T GetValueOrThrow() => Value!;
-
-        /// <inheritdoc />
-        public T GetValueOrThrow(string message) => Value!;
-
-        /// <inheritdoc />
-        public T GetValueOrThrow(Func<Exception> exceptionFactory) => Value!;
-
-        /// <inheritdoc />
-        public T GetValueOrDefault(T fallback) => Value ?? fallback;
-
-        // Not needed for testing!
+        public T GetValueOrThrow() => throw new NotImplementedException();
+        public T GetValueOrThrow(string message) => throw new NotImplementedException();
+        public T GetValueOrThrow(Func<Exception> exceptionFactory) => throw new NotImplementedException();
+        public T GetValueOrDefault(T fallback) => throw new NotImplementedException();
         public IResult<U> Map<U>(Func<T, U> selector) => throw new NotImplementedException();
         public IResult<U> Bind<U>(Func<T, IResult<U>> binder) => throw new NotImplementedException();
         public IResult<T> Tap(Action<T> onSuccess) => throw new NotImplementedException();
