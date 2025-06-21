@@ -1,4 +1,8 @@
-﻿namespace Zentient.Results
+﻿// <copyright file="ResultStatusExtensions.cs" company="Zentient Framework Team">
+// Copyright © 2025 Zentient Framework Team. All rights reserved.
+// </copyright>
+
+namespace Zentient.Results
 {
     /// <summary>
     /// Provides extension methods for <see cref="IResultStatus"/>.
@@ -12,6 +16,9 @@
         /// <param name="status">The result status.</param>
         /// <returns>The integer HTTP status code.</returns>
         public static int ToHttpStatusCode(this IResultStatus status)
-            => status.Code;
+        {
+            ArgumentNullException.ThrowIfNull(status, nameof(status));
+            return status.Code;
+        }
     }
 }

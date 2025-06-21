@@ -1,4 +1,8 @@
-﻿namespace Zentient.Results
+﻿// <copyright file="IResult.cs" company="Zentient Framework Team">
+// Copyright © 2025 Zentient Framework Team. All rights reserved.
+// </copyright>
+
+namespace Zentient.Results
 {
     /// <summary>
     /// Defines the contract for an non-generic operation's outcome, which can be either a success or a failure.
@@ -18,7 +22,7 @@
         IReadOnlyList<string> Messages { get; }
 
         /// <summary>Gets the message of the first error if the operation failed; otherwise, null.</summary>
-        string? Error { get; }
+        string? ErrorMessage { get; }
 
         /// <summary>Gets the semantic status of the result, providing contextual information (e.g., HTTP-like status codes).</summary>
         IResultStatus Status { get; }

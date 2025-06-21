@@ -1,4 +1,8 @@
-﻿namespace Zentient.Utilities
+﻿// <copyright file="EnumExtensions.cs" company="Zentient Framework Team">
+// Copyright © 2025 Zentient Framework Team. All rights reserved.
+// </copyright>
+
+namespace Zentient.Utilities
 {
     /// <summary>Provides extension methods for working with enums.</summary>
     public static class EnumExtensions

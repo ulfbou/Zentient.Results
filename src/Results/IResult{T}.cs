@@ -1,6 +1,11 @@
-﻿using System.Runtime.Serialization;
+﻿// <copyright file="IResult{T}.cs" company="Zentient Framework Team">
+// Copyright © 2025 Zentient Framework Team. All rights reserved.
+// </copyright>
+
+using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 
+#pragma warning disable CA1715 // Type names should not have the same name as a namespace
 namespace Zentient.Results
 {
     /// <summary>Represents the outcome of an operation that produces a value on success.</summary>

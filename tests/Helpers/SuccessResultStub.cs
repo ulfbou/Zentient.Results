@@ -21,6 +21,8 @@
         /// <inheritdoc />
         public IResultStatus Status { get; }
 
+        public string? ErrorMessage => null;
+
         /// <summary>Initializes a new instance of the <see cref="SuccessResultStub"/> class with a status.</summary>
         /// <param name="status">The status of the result.</param>
         public SuccessResultStub(IResultStatus status)

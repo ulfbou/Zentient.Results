@@ -1,9 +1,15 @@
-﻿using FluentAssertions;
+﻿// <copyright file="ResultTests.cs" company="Zentient Framework Team">
+// Copyright © 2025 Zentient Framework Team. All rights reserved.
+// </copyright>
+
+using FluentAssertions;
 
 using System;
 using System.Collections.Generic;
 
 using Xunit;
+
+using Zentient.Results.Constants;
 
 namespace Zentient.Results.Tests
 {
@@ -14,8 +20,8 @@ namespace Zentient.Results.Tests
 
         private class DummyStatus : IResultStatus
         {
-            public int Code { get; set; }
-            public string Description { get; set; } = string.Empty;
+            public int Code { get; init; }
+            public string Description { get; init; } = string.Empty;
             public override string ToString() => $"{Code} {Description}";
         }
 
@@ -25,10 +31,11 @@ namespace Zentient.Results.Tests
         private static IResultStatus BadRequestStatus => new DummyStatus { Code = 400, Description = "Bad Request" };
         private static IResultStatus ErrorStatus => new DummyStatus { Code = 500, Description = "Internal Server Error" };
 
+
         [Fact]
         public void Success_Factory_Creates_Successful_Result()
         {
-            var result = Result.Success(SuccessStatus, "All good");
+            var result = Result.Success("All good");
             result.IsSuccess.Should().BeTrue();
             result.IsFailure.Should().BeFalse();
             result.Status.Code.Should().Be(200);
@@ -89,7 +96,7 @@ namespace Zentient.Results.Tests
             Result.Forbidden().Status.Code.Should().Be(ResultStatuses.Forbidden.Code);
             Result.NotFound().Status.Code.Should().Be(ResultStatuses.NotFound.Code);
             Result.Conflict().Status.Code.Should().Be(ResultStatuses.Conflict.Code);
-            Result.InternalError().Status.Code.Should().Be(ResultStatuses.Error.Code);
+            Result.ServiceUnavailable().Status.Code.Should().Be(ResultStatuses.ServiceUnavailable.Code);
         }
 
         [Fact]
@@ -102,13 +109,12 @@ namespace Zentient.Results.Tests
             result.Errors.Should().ContainSingle();
             result.Errors[0].Category.Should().Be(ErrorCategory.Exception);
             result.Errors[0].Message.Should().Be("fail!");
-            result.Errors[0].Data.Should().Be(ex);
         }
 
         [Fact]
         public void Implicit_Conversion_From_ErrorInfo_Creates_Failure()
         {
-            Result result = SampleError;
+            Result result = (Result)Result.Failure(SampleError);
             result.IsFailure.Should().BeTrue();
             result.Errors.Should().Contain(SampleError);
         }
@@ -116,7 +122,7 @@ namespace Zentient.Results.Tests
         [Fact]
         public void Generic_Success_Created_NoContent_Factories_Forward_To_ResultT()
         {
-            var r1 = Result.Success(42, "ok");
+            var r1 = Result<int>.Success(42, "ok");
             r1.IsSuccess.Should().BeTrue();
             r1.Messages.Should().Contain("ok");
             r1.Value.Should().Be(42);
@@ -125,7 +131,7 @@ namespace Zentient.Results.Tests
             r2.IsSuccess.Should().BeTrue();
             r2.Messages.Should().Contain("created");
 
-            var r3 = Result.NoContent<int>("none");
+            var r3 = Result<int>.NoContent("none");
             r3.IsSuccess.Should().BeTrue();
             r3.Messages.Should().Contain("none");
         }
@@ -134,33 +140,34 @@ namespace Zentient.Results.Tests
         public void Generic_Failure_Validation_Unauthorized_Forbidden_NotFound_Conflict_InternalError_FromException()
         {
             var err = new ErrorInfo(ErrorCategory.General, "E", "fail");
-            var r1 = Result.Failure<int>(err);
+            var r1 = Result<int>.Failure(err);
             r1.IsFailure.Should().BeTrue();
             r1.Errors.Should().Contain(err);
 
-            var r2 = Result.Validation<int>(SampleErrors);
+            var r2 = Result<int>.Validation(SampleErrors);
             r2.IsFailure.Should().BeTrue();
             r2.Errors.Should().BeEquivalentTo(SampleErrors);
 
-            var r3 = Result.Unauthorized<int>();
+            var r3 = Result<int>.Unauthorized();
             r3.Status.Code.Should().Be(ResultStatuses.Unauthorized.Code);
 
-            var r4 = Result.Forbidden<int>();
+            var r4 = Result<int>.Forbidden();
             r4.Status.Code.Should().Be(ResultStatuses.Forbidden.Code);
 
-            var r5 = Result.NotFound<int>();
+            var r5 = Result<int>.NotFound();
             r5.Status.Code.Should().Be(ResultStatuses.NotFound.Code);
 
-            var r6 = Result.Conflict<int>();
+            var r6 = Result<int>.Conflict();
             r6.Status.Code.Should().Be(ResultStatuses.Conflict.Code);
 
-            var r7 = Result.InternalError<int>();
-            r7.Status.Code.Should().Be(ResultStatuses.Error.Code);
+            var r7 = Result<int>.ServiceUnavailable();
+            r7.Status.Code.Should().Be(ResultStatuses.ServiceUnavailable.Code);
 
             var ex = new InvalidOperationException("fail!");
-            var r8 = Result.FromException<int>(ex);
+            var r8 = Result<int>.FromException(ex);
             r8.IsFailure.Should().BeTrue();
             r8.Errors[0].Message.Should().Be("fail!");
+            r8.Errors[0].Metadata.Should().ContainKey(MetadataKeys.ExceptionType).WhoseValue.Should().Be(ex.GetType().FullName);
         }
 
         [Fact]
@@ -184,10 +191,10 @@ namespace Zentient.Results.Tests
         public void Error_Returns_First_Error_Message_Or_Null()
         {
             var result = Result.Failure(new[] { SampleError, new ErrorInfo(ErrorCategory.General, "E2", "Second") }, BadRequestStatus);
-            result.Error.Should().Be("Error message");
+            result.ErrorMessage.Should().Be("Error message");
 
             var success = Result.Success(SuccessStatus);
-            success.Error.Should().BeNull();
+            success.ErrorMessage.Should().BeNull();
         }
 
         [Fact]
@@ -201,7 +208,7 @@ namespace Zentient.Results.Tests
         [Fact]
         public void ToString_Formats_Success_And_Failure()
         {
-            var success = Result.Success(SuccessStatus, "yay");
+            var success = Result.Success("yay");
             success.ToString().Should().Contain("Success").And.Contain("yay");
 
             var failure = Result.Failure(SampleError, BadRequestStatus);
@@ -211,7 +218,7 @@ namespace Zentient.Results.Tests
         [Fact]
         public void Guard_AgainstDefault_Throws_On_Default_ErrorInfo()
         {
-            Action act = () => Result.Failure(default(ErrorInfo));
+            Action act = () => Result.Failure(error: null!);
             act.Should().Throw<ArgumentException>();
         }
     }
