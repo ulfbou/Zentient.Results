@@ -24,14 +24,14 @@ namespace Zentient.Results.Tests.Helpers
                 return new ValidationProblemDetails(new Dictionary<string, string[]> { { "Field", new[] { "Error" } } })
                 {
                     Status = 422,
-                    Title = result.Error ?? "Validation failed"
+                    Title = result.ErrorMessage ?? "Validation failed"
                 };
             }
 
             return new ProblemDetails
             {
                 Status = result.Status.Code,
-                Title = result.Error ?? "Error",
+                Title = result.ErrorMessage ?? "Error",
                 Detail = string.Join("; ", result.Messages)
             };
         }

@@ -3,8 +3,50 @@ Here's the updated changelog for Zentient.Results 0.3.0:
 # Zentient.Results Changelog
 
 ---
+## Version 0.4.0 (Current Release)
 
-## Version 0.3.0 (Current Release)
+This release introduces significant enhancements to the Zentient.Results library, focusing on improved error handling, expanded `ResultStatus` definitions, and more robust JSON serialization.
+
+### New Features
+
+* **Expanded `ResultStatus` Definitions**: The `Zentient.Results.Constants.ResultStatusConstants` now includes a comprehensive set of HTTP status codes (1xx, 3xx, and additional 4xx/5xx codes) and their corresponding descriptions. This provides a richer set of predefined statuses for more granular result reporting.
+* **Enhanced `ErrorInfo` Class**:
+    * `ErrorInfo` is now a `sealed class` instead of a `readonly struct`, allowing for better extensibility and reference equality checks.
+    * Added a `Detail` property for more descriptive error messages.
+    * Introduced a `Metadata` dictionary (`IImmutableDictionary<string, object?>`) to store additional, arbitrary data related to an error. This enables richer error context, especially for exceptions (e.g., stack traces, source information).
+    * The `FromException` static method on `ErrorInfo` now automatically captures `ExceptionMessage`, `ExceptionStackTrace`, `ExceptionSource`, and `ExceptionType` into the `Metadata` dictionary.
+    * New constructors and static factory methods have been added for easier creation of common `ErrorInfo` types (`General`, `Validation`, `NotFound`, `Authentication`, `Authorization`, `Conflict`).
+* **Refactored `Result` and `Result<T>` Classes**:
+    * Both `Result` (non-generic) and `Result<T>` (generic) are now `class` types instead of `structs`. This aligns with common patterns for complex types and enables potential future inheritance scenarios.
+    * **Improved JSON Serialization**: A new `ResultJsonConverter` and its internal generic/non-generic implementations (`ResultGenericJsonConverter<TValue>` and `ResultNonGenericJsonConverter`) are introduced to handle JSON serialization and deserialization of `Result` and `Result<T>` objects more robustly. This converter now explicitly serializes `IsSuccess`, `IsFailure`, `Status`, `Messages`, `Errors`, and `ErrorMessage`.
+    * The `ErrorMessage` property on `IResult` (and consequently `Result` and `Result<T>`) is now explicitly `ErrorMessage` (was `Error`), providing clearer naming.
+    * Added new static factory methods for common HTTP success and failure statuses directly on `Result` and `Result<T>`: `Accepted`, `RequestTimeout`, `Gone`, `PreconditionFailed`, `TooManyRequests`, `NotImplemented`, `ServiceUnavailable`.
+    * `Result<T>` now includes a `MapError` method, allowing transformation of the error list when the result is a `Failure`.
+* **Enhanced Extension Methods**:
+    * `ResultCreationHelpersExtensions`: Added `AsResult` overloads and `AsNoContent<T>`.
+    * `ResultSideEffectExtensions`: `OnSuccess` and `OnFailure` extensions for both `IResult` and `IResult<T>` are now available.
+    * `ResultTransformationExtensions`: Introduced new `Bind` overloads for `IResult` and `IResult<T>` to simplify chaining operations.
+    * `ResultTryExtensions`: New `Try` extension methods for `Action` and `Func<T>` to wrap potentially exception-throwing code into a `Result` or `Result<T>`.
+* **`ResultException` Improvements**: The `ResultException` now has additional constructors to accept a message and/or an inner exception, providing more flexibility for error propagation.
+
+### Breaking Changes
+
+* `ErrorInfo` is now a `sealed class` instead of a `readonly struct`. This means `ErrorInfo` instances are now reference types.
+* `Result` and `Result<T>` are now `class` types instead of `structs`. This changes their default behavior regarding nullability and assignment (they are now reference types).
+* The `Error` property on `IResult` (and its implementations) has been renamed to `ErrorMessage` for clarity.
+* The internal `Constants` class has been split and reorganized into `Zentient.Results.Constants.ErrorCodes`, `Zentient.Results.Constants.JsonConstants`, `Zentient.Results.Constants.MetadataKeys`, and `Zentient.Results.Constants.ResultStatusConstants` for better organization and clarity.
+* Default constructors for `ErrorInfo` have changed signatures to align with the new property structure.
+* JSON serialization behavior for `Result` and `Result<T>` is now explicitly managed by `ResultJsonConverter`, which might alter the exact JSON output structure compared to previous versions (e.g., inclusion of `IsSuccess`, `IsFailure` properties).
+
+### Bug Fixes
+
+* The JSON serialization logic has been completely rewritten to address potential issues and provide more consistent and robust serialization/deserialization of `Result` and `Result<T>` objects, including nested `ErrorInfo` and `IResultStatus` instances.
+* Addressed potential null reference issues in `Result<T>.Failure` factory methods when `errors` collection was null or empty.
+* Corrected the `_firstError` lazy initialization in `Result<T>` to better handle the case where `Errors` collection might be empty.
+
+---
+
+## Version 0.3.0 (Previous Release)
 
 This release significantly enhances error handling capabilities, strengthens JSON serialization, and introduces robust integration points for ASP.NET Core's Problem Details standard, along with other internal refinements.
 
@@ -41,7 +83,7 @@ This release significantly enhances error handling capabilities, strengthens JSO
 
 ---
 
-## Version 0.2.0 (Previous Release)
+## Version 0.2.0
 
 This release introduces significant enhancements to the `Zentient.Results` library, focusing on improved consistency, robustness, and internal clarity. Key updates include renaming `DefaultResultStatus` for better alignment, refining the `ErrorInfo` message retrieval, and enhancing the `Result<T>` structure for more explicit value handling.
 

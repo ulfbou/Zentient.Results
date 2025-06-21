@@ -1,37 +1,31 @@
-﻿namespace Zentient.Results.Tests.Helpers
+﻿
+namespace Zentient.Results.Tests.Helpers
 {
     /// <summary>
-    /// A concrete implementation of <see cref="IResult"/> for use in tests.
-    /// This class provides a simple way to create results with a value, success status, and optional errors or messages, in a test environment.
+    /// A concrete internal implementation of IResult for successful outcomes in tests.
     /// </summary>
     internal class ConcreteResult : IResult
     {
-        /// <inheritdoc />
-        public bool IsSuccess { get; init; }
-
-        public bool IsFailure { get; }
-
+        public bool IsSuccess { get; }
+        public bool IsFailure => !IsSuccess;
+        public IResultStatus Status { get; }
         public IReadOnlyList<ErrorInfo> Errors { get; }
-
         public IReadOnlyList<string> Messages { get; }
 
-        public string? Error { get; }
+        private readonly Lazy<string?> _firstError;
+        public string? ErrorMessage => _firstError.Value;
 
-        public IResultStatus Status { get; }
-
-        public ConcreteResult(
-            bool isSuccess,
-            IReadOnlyList<ErrorInfo> errors = null,
-            IReadOnlyList<string> messages = null,
-            string? error = null,
-            IResultStatus status = null)
+        // Constructor for a successful result
+        public ConcreteResult(IResultStatus status, IReadOnlyList<string>? messages = null)
         {
-            IsSuccess = isSuccess;
-            IsFailure = !isSuccess;
-            Errors = errors ?? Array.Empty<ErrorInfo>();
-            Messages = messages ?? Array.Empty<string>();
-            Error = error;
-            Status = status ?? new MockResultStatus(200);
+            IsSuccess = true;
+            Status = status;
+            Messages = messages?.ToArray() ?? Array.Empty<string>();
+            Errors = Array.Empty<ErrorInfo>();
+            _firstError = new Lazy<string?>(() => null);
         }
+
+        // Minimal constructor for success, defaulting to 200 OK
+        public ConcreteResult() : this(new DummyStatus { Code = 200, Description = "OK" }) { }
     }
 }

@@ -1,4 +1,8 @@
-﻿using FluentAssertions;
+﻿// <copyright file="ResultTTests.cs" company="Zentient Framework Team">
+// Copyright © 2025 Zentient Framework Team. All rights reserved.
+// </copyright>
+
+using FluentAssertions;
 
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -62,7 +66,7 @@ namespace Zentient.Results.Tests
         [Fact]
         public void Failure_Factory_Throws_On_NullOrEmpty_Errors()
         {
-            Action actNull = () => Result<int>.Failure(0, null!, ResultStatuses.BadRequest);
+            Action actNull = () => Result<int>.Failure(0, errors: null!, status: ResultStatuses.BadRequest);
             Action actEmpty = () => Result<int>.Failure(0, Array.Empty<ErrorInfo>(), ResultStatuses.BadRequest);
             actNull.Should().Throw<ArgumentNullException>();
             actEmpty.Should().Throw<ArgumentException>();
@@ -87,7 +91,6 @@ namespace Zentient.Results.Tests
             result.Errors.Should().ContainSingle();
             result.Errors[0].Category.Should().Be(ErrorCategory.Exception);
             result.Errors[0].Message.Should().Be("fail!");
-            result.Errors[0].Data.Should().Be(ex);
         }
 
         [Fact]
@@ -96,15 +99,6 @@ namespace Zentient.Results.Tests
             Result<int> result = 123;
             result.IsSuccess.Should().BeTrue();
             result.Value.Should().Be(123);
-        }
-
-        [Fact]
-        public void Implicit_Conversion_From_Null_Creates_NoContent()
-        {
-            Result<string> result = null!;
-            result.IsSuccess.Should().BeTrue();
-            result.Status.Code.Should().Be(ResultStatuses.NoContent.Code);
-            result.Value.Should().BeNull();
         }
 
         [Fact]
@@ -127,10 +121,10 @@ namespace Zentient.Results.Tests
         public void Error_Returns_First_Error_Message_Or_Null()
         {
             var result = new Result<int>(0, ResultStatuses.Success, null, new[] { SampleError, new ErrorInfo(ErrorCategory.General, "E2", "Second") });
-            result.Error.Should().Be("Error message");
+            result.ErrorMessage.Should().Be("Error message");
 
             var success = Result<int>.Success(1);
-            success.Error.Should().BeNull();
+            success.ErrorMessage.Should().BeNull();
         }
 
         [Fact]
@@ -312,7 +306,6 @@ namespace Zentient.Results.Tests
             var result = Result<int>.Failure(0, error, ResultStatuses.BadRequest);
             result.Errors[0].Code.Should().BeEmpty();
             result.Errors[0].Message.Should().BeEmpty();
-            result.Errors[0].Data.Should().BeNull();
             result.Errors[0].InnerErrors.Should().BeEmpty();
         }
     }

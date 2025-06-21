@@ -17,13 +17,12 @@
         public IReadOnlyList<string> Messages => Array.Empty<string>();
 
         /// <inheritdoc />
-        public string? Error => null;
+        public IResultStatus Status { get; init; }
 
         /// <inheritdoc />
-        public IResultStatus Status { get; }
+        public T Value { get; init; }
 
-        /// <inheritdoc />
-        public T Value { get; }
+        public string? ErrorMessage { get; init; }
 
         /// <summary>Initializes a new instance of the <see cref="SuccessResultStub{T}"/> class with a value and status.</summary>
         /// <param name="value">The value to return on success.</param>

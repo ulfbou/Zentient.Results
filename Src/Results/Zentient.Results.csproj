@@ -7,7 +7,7 @@
 		<Nullable>enable</Nullable>
 
 		<PackageId>Zentient.Results</PackageId>
-		<Version>0.3.0</Version>
+		<Version>0.4.0</Version>
 		<Title>Zentient.Results</Title>
 		<Authors>Ulf Bourelius</Authors>
 		<Company>Ulf Bourelius</Company>

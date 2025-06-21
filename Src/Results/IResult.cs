@@ -1,4 +1,8 @@
-﻿namespace Zentient.Results
+﻿// <copyright file="IResult.cs" company="Zentient Framework Team">
+// Copyright © 2025 Zentient Framework Team. All rights reserved.
+// </copyright>
+
+namespace Zentient.Results
 {
     /// <summary>
     /// Defines the contract for an non-generic operation's outcome, which can be either a success or a failure.
@@ -24,4 +28,3 @@
         IResultStatus Status { get; }
     }
 }
-

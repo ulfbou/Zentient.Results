@@ -1,4 +1,8 @@
-﻿using System.Net;
+﻿// <copyright file="ResultStatus.cs" company="Zentient Framework Team">
+// Copyright © 2025 Zentient Framework Team. All rights reserved.
+// </copyright>
+
+using System.Net;
 
 namespace Zentient.Results
 {
@@ -65,4 +69,3 @@ namespace Zentient.Results
         public static bool operator !=(ResultStatus? left, ResultStatus? right) => !Equals(left, right);
     }
 }
-
