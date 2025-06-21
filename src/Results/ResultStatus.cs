@@ -60,12 +60,15 @@ namespace Zentient.Results
             => Code == other.Code && Description == other.Description;
 
         /// <inheritdoc />
-        public override int GetHashCode() => HashCode.Combine(Code, Description);
+        public override int GetHashCode() =>
+            HashCode.Combine(Code, Description);
 
         /// <inheritdoc />
-        public static bool operator ==(ResultStatus? left, ResultStatus? right) => Equals(left, right);
+        public static bool operator ==(ResultStatus? left, ResultStatus? right) =>
+            Equals(left, right);
 
         /// <inheritdoc />
-        public static bool operator !=(ResultStatus? left, ResultStatus? right) => !Equals(left, right);
+        public static bool operator !=(ResultStatus? left, ResultStatus? right) =>
+            !Equals(left, right);
     }
 }

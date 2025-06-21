@@ -29,10 +29,8 @@ namespace Zentient.Results.Serialization
         /// </summary>
         /// <param name="typeToConvert">The type to check for convertibility.</param>
         /// <returns><c>true</c> if the type can be converted; otherwise, <c>false</c>.</returns>
-        public override bool CanConvert(Type typeToConvert)
-        {
-            return typeof(IResult).IsAssignableFrom(typeToConvert);
-        }
+        public override bool CanConvert(Type typeToConvert) =>
+            typeof(IResult).IsAssignableFrom(typeToConvert);
 
         /// <inheritdoc/>
         /// <summary>
@@ -49,7 +47,6 @@ namespace Zentient.Results.Serialization
             ArgumentNullException.ThrowIfNull(typeToConvert, nameof(typeToConvert));
             ArgumentNullException.ThrowIfNull(options, nameof(options));
 
-            // Generic Result<T> handling
             if (typeToConvert.IsGenericType &&
                 (typeToConvert.GetGenericTypeDefinition() == typeof(Result<>) ||
                  typeToConvert.GetGenericTypeDefinition() == typeof(IResult<>)))
@@ -64,7 +61,6 @@ namespace Zentient.Results.Serialization
                     culture: null)!;
             }
 
-            // Non-generic Result handling
             if (typeToConvert == typeof(Result) || typeToConvert == typeof(IResult))
             {
                 return new ResultNonGenericJsonConverter(options);
@@ -288,8 +284,6 @@ namespace Zentient.Results.Serialization
 
                 writer.WriteStartObject();
 
-                // Remove the 'if (value.IsSuccess)' condition around the Value serialization.
-                // The value property should always be written if it exists, as Result<TValue> can hold a value even on failure.
                 writer.WritePropertyName(ResultJsonConverter.ConvertName(_options, JsonConstants.Result.Value));
 
                 if (value.Value == null && (typeof(TValue).IsClass || Nullable.GetUnderlyingType(typeof(TValue)) != null))
@@ -327,8 +321,6 @@ namespace Zentient.Results.Serialization
                 writer.WriteEndObject();
             }
         }
-
-        // --- Common Helper Methods (moved to static methods of the factory for reuse) ---
 
         /// <summary>
         /// Reads an <see cref="IResultStatus"/> object from the JSON.
@@ -373,12 +365,8 @@ namespace Zentient.Results.Serialization
         /// <param name="reader">The <see cref="Utf8JsonReader"/> to read from.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> to use.</param>
         /// <returns>A new <see cref="ErrorInfo"/> instance deserialized from the JSON, or <c>null</c> if not found or invalid.</returns>
-        private static ErrorInfo? ReadErrorInfo(ref Utf8JsonReader reader, JsonSerializerOptions options)
-        {
-            // Now that ErrorInfo has `init` setters, System.Text.Json can deserialize it directly.
-            // This eliminates the need for manual property parsing and constructor calls.
-            return JsonSerializer.Deserialize<ErrorInfo>(ref reader, options);
-        }
+        private static ErrorInfo? ReadErrorInfo(ref Utf8JsonReader reader, JsonSerializerOptions options) =>
+            JsonSerializer.Deserialize<ErrorInfo>(ref reader, options);
 
 
         /// <summary>
@@ -387,10 +375,8 @@ namespace Zentient.Results.Serialization
         /// <param name="options">The <see cref="JsonSerializerOptions"/> containing the naming policy.</param>
         /// <param name="name">The original property name.</param>
         /// <returns>The converted property name.</returns>
-        private static string ConvertName(JsonSerializerOptions options, string name)
-        {
-            return options.PropertyNamingPolicy?.ConvertName(name) ?? name;
-        }
+        private static string ConvertName(JsonSerializerOptions options, string name) =>
+            options.PropertyNamingPolicy?.ConvertName(name) ?? name;
 
         /// <summary>
         /// Internal DTO to deserialize <see cref="IResultStatus"/> as a concrete type.

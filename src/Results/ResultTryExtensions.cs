@@ -28,13 +28,10 @@ namespace Zentient.Results
             try
             {
                 action();
-                return Result.Success(); // Assuming Result.Success() exists for non-generic success
+                return Result.Success();
             }
             catch (Exception ex)
             {
-                // This is where Result.FromException should be called.
-                // Result.FromException will then call ErrorInfo.FromException,
-                // which now correctly sets the Code.
                 return Result.FromException(ex);
             }
         }
