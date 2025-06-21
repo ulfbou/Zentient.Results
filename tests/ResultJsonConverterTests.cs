@@ -5,7 +5,6 @@
 using FluentAssertions;
 
 using System.Collections.Immutable;
-using System.Reflection.PortableExecutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
