@@ -2,37 +2,32 @@
 
 namespace Zentient.Results.Tests.Helpers
 {
-    /// <summary>Mock implementation of <see cref="IResult"/> for testing purposes.</summary>
+    /// <summary>A concrete internal implementation of IResult for failed outcomes in tests.</summary>
     internal class FailureResultStub : IResult
     {
-        /// <inheritdoc />
         public bool IsSuccess => false;
-
-        /// <inheritdoc />
         public bool IsFailure => true;
-
-        /// <inheritdoc />
+        public IResultStatus Status { get; }
         public IReadOnlyList<ErrorInfo> Errors { get; }
-
-        /// <inheritdoc />
         public IReadOnlyList<string> Messages { get; }
 
-        /// <inheritdoc />
-        public string? Error { get; }
+        private readonly Lazy<string?> _firstError;
+        public string? ErrorMessage => _firstError.Value;
 
-        /// <inheritdoc />
-        public IResultStatus Status { get; }
-
-        /// <summary>Initializes a new instance of the <see cref="FailureResultStub"/> class with errors and a status.</summary>
-        /// <param name="errors">A collection of errors associated with the failure.</param>
-        /// <param name="errorDetail">A detailed error message.</param>
-        /// <param name="status">The status of the result.</param>
-        public FailureResultStub(IEnumerable<ErrorInfo> errors, string errorDetail, IResultStatus status)
+        // Constructor for a failed result
+        public FailureResultStub(IReadOnlyList<ErrorInfo> errors, IResultStatus status)
         {
-            Errors = errors?.ToList() ?? new List<ErrorInfo>();
-            Messages = errors?.Select(e => e.Message).ToList() ?? new List<string>();
-            Error = errorDetail;
+            if (errors == null || !errors.Any())
+            {
+                throw new ArgumentException("Errors cannot be null or empty for a failure stub.", nameof(errors));
+            }
+            Errors = errors.ToList();
             Status = status;
+            Messages = Array.Empty<string>(); // No messages for failure stub
+            _firstError = new Lazy<string?>(() => Errors.FirstOrDefault()?.Message);
         }
+
+        // Minimal constructor for failure, defaulting to 400 Bad Request
+        public FailureResultStub(ErrorInfo error) : this(new[] { error }, new DummyStatus { Code = 400, Description = "Bad Request" }) { }
     }
 }
