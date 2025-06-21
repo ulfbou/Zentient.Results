@@ -9,6 +9,8 @@ using System.Collections.Generic;
 
 using Xunit;
 
+using Zentient.Results.Constants;
+
 namespace Zentient.Results.Tests
 {
     public class ResultTests
@@ -112,11 +114,7 @@ namespace Zentient.Results.Tests
         [Fact]
         public void Implicit_Conversion_From_ErrorInfo_Creates_Failure()
         {
-            // Note: This implicit conversion is not present on Result or IResult in the provided code.
-            // If this was an extension method ToResult(this ErrorInfo), it needs to be called explicitly.
-            // If it's desired to have an implicit conversion, it must be added to the Result class.
-            // Assuming this test relies on `Result.Failure(SampleError)` directly.
-            Result result = (Result)Result.Failure(SampleError); // Explicit cast to clarify, though not strictly needed if only one implicit path.
+            Result result = (Result)Result.Failure(SampleError);
             result.IsFailure.Should().BeTrue();
             result.Errors.Should().Contain(SampleError);
         }
@@ -169,7 +167,7 @@ namespace Zentient.Results.Tests
             var r8 = Result<int>.FromException(ex);
             r8.IsFailure.Should().BeTrue();
             r8.Errors[0].Message.Should().Be("fail!");
-            r8.Errors[0].Metadata.Should().ContainKey("ExceptionType").WhoseValue.Should().Be(ex.GetType().FullName);
+            r8.Errors[0].Metadata.Should().ContainKey(MetadataKeys.ExceptionType).WhoseValue.Should().Be(ex.GetType().FullName);
         }
 
         [Fact]

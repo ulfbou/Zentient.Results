@@ -4,6 +4,7 @@
 
 using FluentAssertions;
 
+using System.Collections.Immutable;
 using System.Reflection.PortableExecutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -208,15 +209,13 @@ namespace Zentient.Results.Tests
         [Fact]
         public void Serialize_And_Deserialize_Complex_Generic_Result()
         {
-            // Corrected instantiation of ErrorInfo for innerErrors:
             var error = new ErrorInfo(
                 ErrorCategory.Database,
                 "DB",
                 "DB error",
-                null, // detail
-                metadata: new Dictionary<string, object?> { { "Table", "Users" } }, // Explicitly named 'data'
-                innerErrors: new[] { SampleError } // Explicitly named 'innerErrors'
-            );
+                null,
+                ImmutableDictionary.CreateRange<string, object?>(new[] { new KeyValuePair<string, object?>("Table", "Users") }),
+                ImmutableList.Create(SampleError));
             var result = new Result<List<string>>(new List<string> { "a", "b" }, BadRequestStatus, new[] { "msg" }, new[] { error });
             var json = JsonSerializer.Serialize(result, GetOptions());
             Result<List<string>>? deserialized = JsonSerializer.Deserialize<Result<List<string>>>(json, GetOptions());
