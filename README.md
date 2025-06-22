@@ -1,10 +1,7 @@
 # Zentient.Results
-
-[![NuGet](https://img.shields.io/nuget/v/Zentient.Results?label=Zentient.Results)](https://www.nuget.org/packages/Zentient.Results)
+[![NuGet](https://img.shields.io/nuget/v/Zentient.Results?label=NuGet)](https://www.nuget.org/packages/Zentient.Results)
 ![License](https://img.shields.io/github/license/ulfbou/Zentient.Results)
-![.NET Versions](![.NET Versions](https://img.shields.io/badge/.NET-6.0%20%7C%207.0%20%7C%208.0%20%7C%209.0-blue)
-
-[![NuGet Version](https://buildstats.info/nuget/Zentient.Results)](https://www.nuget.org/packages/Zentient.Results/)
+![.NET Versions](https://img.shields.io/badge/.NET-6.0%20%7C%207.0%20%7C%208.0%20%7C%209.0-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/ulfbou/Zentient.Results/blob/main/LICENSE)
 
 Zentient.Results is a lightweight, opinionated .NET library that provides a robust and consistent approach to handling operation outcomes. It introduces **immutable result classes** to encapsulate either a successful value or structured error information, promoting clean architecture principles, enhancing code readability, and streamlining error propagation across application layers. This framework is designed to align with modern functional programming paradigms and improve the predictability of your application's behavior.
