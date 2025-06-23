@@ -1,9 +1,18 @@
-# Zentient.Results
+﻿# Zentient.Results
 
-[](https://www.nuget.org/packages/Zentient.Results/)
-[](https://github.com/ulfbou/Zentient.Results/blob/main/LICENSE)
+[![NuGet](https://img.shields.io/nuget/v/Zentient.Results?label=Zentient.Results)](https://www.nuget.org/packages/Zentient.Results)
+[![Build](https://img.shields.io/github/actions/workflow/status/ulfbou/Zentient.Results/build.yml)](https://github.com/ulfbou/Zentient.Results/actions)
+![License](https://img.shields.io/github/license/ulfbou/Zentient.Results)
+![.NET Versions](https://img.shields.io/badge/.NET-6.0%20%7C%207.0%20%7C%208.0%20%7C%209.0-blue)
 
 Zentient.Results is a lightweight, opinionated .NET library that provides a robust and consistent approach to handling operation outcomes. It introduces immutable result types to encapsulate success values or structured error information, promoting clean architecture principles, enhancing code readability, and streamlining error propagation across application layers. This framework is designed to align with modern functional programming paradigms and improve the predictability of your application's behavior.
+
+---
+
+> **ℹ️ v0.4.1 Update:**  
+> Minor changes in v0.4.1 mitigate the breaking changes introduced in v0.4.0 by expanding internal visibility to the `Zentient.Endpoints`, `Zentient.Telemetry`, and related libraries. This ensures smoother integration and compatibility for consumers of these packages, especially when using advanced scenarios or extension libraries within the Zentient ecosystem.
+
+---
 
 ## Key Features
 
@@ -23,6 +32,7 @@ Install Zentient.Results via NuGet Package Manager:
 dotnet add package Zentient.Results
 ```
 
+
 Zentient.Results targets `.NET 6+`, `.NET 7+`, `.NET 8+`, and `.NET 9`.
 
 ## Getting Started
@@ -30,44 +40,44 @@ Zentient.Results targets `.NET 6+`, `.NET 7+`, `.NET 8+`, and `.NET 9`.
 Here's a quick example demonstrating basic usage:
 
 ```csharp
-using Zentient.Results;
 using System;
 using System.Collections.Generic;
+
+using Zentient.Results;
 
 public class UserService
 {
     // Example: Operation that can succeed or fail
     public IResult<User> GetUserById(Guid id)
     {
-        if (id == Guid.Empty)
-        {
-            return Result<User>.Failure(
-                default,
-                new ErrorInfo(ErrorCategory.Validation, "InvalidId", "User ID cannot be empty."),
-                ResultStatuses.BadRequest);
-        }
-
-        // Simulate fetching a user
-        if (id == new Guid("A0000000-0000-0000-0000-000000000001"))
-        {
-            return Result<User>.Success(new User { Id = id, Name = "Alice" });
-        }
-        
-        return Result<User>.Failure(
-            default,
-            new ErrorInfo(ErrorCategory.NotFound, "UserNotFound", $"User with ID {id} was not found."),
-            ResultStatuses.NotFound);
+	if (id == Guid.Empty)
+	{
+	    return Result<User>.Failure(
+		default,
+		new ErrorInfo(ErrorCategory.Validation, "InvalidId", "User ID cannot be empty."),
+		ResultStatuses.BadRequest);
+	}
+	
+	// Simulate fetching a user
+	if (id == new Guid("A0000000-0000-0000-0000-000000000001"))
+	{
+	    return Result<User>.Success(new User { Id = id, Name = "Alice" });
+	}
+	
+	return Result<User>.Failure(
+	    default,
+	    new ErrorInfo(ErrorCategory.NotFound, "UserNotFound", $"User with ID {id} was not found."),
+	    ResultStatuses.NotFound);
     }
 
     // Example: Chaining operations
     public IResult<string> GetUserName(Guid userId)
     {
-        return GetUserById(userId)
-            .Map(user => user.Name) // Extract user name if successful
-            .OnFailure(errors => Console.WriteLine($"Failed to get user name: {errors[0].Message}")); // Log error
+	return GetUserById(userId)
+	    .Map(user => user.Name) // Extract user name if successful
+	    .OnFailure(errors => Console.WriteLine($"Failed to get user name: {errors[0].Message}")); // Log error
     }
 }
-
 public class User
 {
     public Guid Id { get; set; }
@@ -78,35 +88,35 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        var userService = new UserService();
+	var userService = new UserService();
+    // Successful call
+	var successResult = userService.GetUserById(new Guid("A0000000-0000-0000-0000-000000000001"));
+	if (successResult.IsSuccess)
+	{
+	    Console.WriteLine($"User found: {successResult.Value.Name}");
+	}
 
-        // Successful call
-        var successResult = userService.GetUserById(new Guid("A0000000-0000-0000-0000-000000000001"));
-        if (successResult.IsSuccess)
-        {
-            Console.WriteLine($"User found: {successResult.Value.Name}");
-        }
+	// Failed call - User not found
+	var notFoundResult = userService.GetUserById(Guid.NewGuid());
+	if (notFoundResult.IsFailure)
+	{
+	    Console.WriteLine($"Error: {notFoundResult.Error}");
+	    Console.WriteLine($"Status Code: {notFoundResult.Status.Code}, Description: {notFoundResult.Status.Description}");
+	}
 
-        // Failed call - User not found
-        var notFoundResult = userService.GetUserById(Guid.NewGuid());
-        if (notFoundResult.IsFailure)
-        {
-            Console.WriteLine($"Error: {notFoundResult.Error}");
-            Console.WriteLine($"Status Code: {notFoundResult.Status.Code}, Description: {notFoundResult.Status.Description}");
-        }
+	// Chained operation
+	var chainedSuccess = userService.GetUserName(new Guid("A0000000-0000-0000-0000-000000000001"));
+	if (chainedSuccess.IsSuccess)
+	{
+	    Console.WriteLine($"Chained user name: {chainedSuccess.Value}");
+	}
 
-        // Chained operation
-        var chainedSuccess = userService.GetUserName(new Guid("A0000000-0000-0000-0000-000000000001"));
-        if (chainedSuccess.IsSuccess)
-        {
-            Console.WriteLine($"Chained user name: {chainedSuccess.Value}");
-        }
-
-        var chainedFailure = userService.GetUserName(Guid.Empty); // Will trigger validation error
-        // OnFailure action in GetUserName will be executed here
+	var chainedFailure = userService.GetUserName(Guid.Empty); // Will trigger validation error
+	// OnFailure action in GetUserName will be executed here
     }
 }
 ```
+
 
 ## Usage Scenarios
 
@@ -137,7 +147,7 @@ For more in-depth examples and advanced usage patterns, please refer to the [Zen
 
 ## Contributing
 
-We welcome contributions to Zentient.Results\! Please refer to our [CONTRIBUTING.md](https://github.com/ulfbou/Zentient.Results/blob/main/CONTRIBUTING.md) for guidelines on how to submit issues, propose features, or contribute code. We adhere to standard .NET coding conventions.
+We welcome contributions to Zentient.Results! Please refer to our [CONTRIBUTING.md](https://github.com/ulfbou/Zentient.Results/blob/main/CONTRIBUTING.md) for guidelines on how to submit issues, propose features, or contribute code. We adhere to standard .NET coding conventions.
 
 ## License
 

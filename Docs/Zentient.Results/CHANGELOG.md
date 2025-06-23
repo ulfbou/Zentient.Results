@@ -1,9 +1,28 @@
-Here's the updated changelog for Zentient.Results 0.3.0:
-
 # Zentient.Results Changelog
 
 ---
-## Version 0.4.0 (Current Release)
+## Version 0.4.1 (Current Release)
+
+This is a patch release focused on enhancing the integration and compatibility of `Zentient.Results` with other libraries within the Zentient ecosystem, specifically addressing internal visibility concerns.
+
+### New Features
+
+* **Expanded Internal Visibility (`InternalsVisibleTo`):**
+    * To streamline development and enable advanced scenarios, `Zentient.Results` now explicitly exposes its internal types and members to a set of designated friend assemblies.
+    * This includes key projects such as `Zentient.Endpoints`, `Zentient.Telemetry`, and their associated test and extension libraries.
+    * This ensures that these consuming libraries can access necessary internal components (e.g., for testing or deep integration) when `Zentient.Results` is consumed as a NuGet package, thereby resolving compilation issues and integration friction encountered with version 0.4.0.
+
+### Breaking Changes
+
+* **No new breaking changes** in this patch release. `Zentient.Results 0.4.1` is fully compatible with `Zentient.Results 0.4.0` at the public API level. Any breaking changes from 0.4.0 (e.g., `Result` and `Result<T>` transitioning to sealed classes, `IResult.Error` renamed to `ErrorMessage`) still apply if you are upgrading from versions prior to 0.4.0.
+
+### Addressed Integration/Compatibility Issues
+
+* Mitigated internal visibility challenges that prevented direct access to internal types and members from `Zentient.Endpoints`, `Zentient.Telemetry`, and related projects when `Zentient.Results 0.4.0` was referenced as a NuGet package.
+
+---
+
+## Version 0.4.0
 
 This release introduces significant enhancements to the Zentient.Results library, focusing on improved error handling, expanded `ResultStatus` definitions, and more robust JSON serialization.
 
@@ -16,6 +35,7 @@ This release introduces significant enhancements to the Zentient.Results library
     * Introduced a `Metadata` dictionary (`IImmutableDictionary<string, object?>`) to store additional, arbitrary data related to an error. This enables richer error context, especially for exceptions (e.g., stack traces, source information).
     * The `FromException` static method on `ErrorInfo` now automatically captures `ExceptionMessage`, `ExceptionStackTrace`, `ExceptionSource`, and `ExceptionType` into the `Metadata` dictionary.
     * New constructors and static factory methods have been added for easier creation of common `ErrorInfo` types (`General`, `Validation`, `NotFound`, `Authentication`, `Authorization`, `Conflict`).
+    * Existing `ErrorInfo` factory methods (`Validation`, `FromException`) have been updated to ensure consistency with the new immutability requirements for `Metadata`.
 * **Refactored `Result` and `Result<T>` Classes**:
     * Both `Result` (non-generic) and `Result<T>` (generic) are now `class` types instead of `structs`. This aligns with common patterns for complex types and enables potential future inheritance scenarios.
     * **Improved JSON Serialization**: A new `ResultJsonConverter` and its internal generic/non-generic implementations (`ResultGenericJsonConverter<TValue>` and `ResultNonGenericJsonConverter`) are introduced to handle JSON serialization and deserialization of `Result` and `Result<T>` objects more robustly. This converter now explicitly serializes `IsSuccess`, `IsFailure`, `Status`, `Messages`, `Errors`, and `ErrorMessage`.
@@ -27,7 +47,17 @@ This release introduces significant enhancements to the Zentient.Results library
     * `ResultSideEffectExtensions`: `OnSuccess` and `OnFailure` extensions for both `IResult` and `IResult<T>` are now available.
     * `ResultTransformationExtensions`: Introduced new `Bind` overloads for `IResult` and `IResult<T>` to simplify chaining operations.
     * `ResultTryExtensions`: New `Try` extension methods for `Action` and `Func<T>` to wrap potentially exception-throwing code into a `Result` or `Result<T>`.
-* **`ResultException` Improvements**: The `ResultException` now has additional constructors to accept a message and/or an inner exception, providing more flexibility for error propagation.
+* **Extended ResultStatuses and Thread-Safe Caching**:
+    * The `ResultStatuses` class now includes a more comprehensive set of pre-defined HTTP-aligned statuses, such as `TooManyRequests`, `ImATeapot`, and others, providing richer options for status reporting.
+    * The internal caching mechanism for `IResultStatus` instances within `ResultStatuses` now uses a `ConcurrentDictionary`, ensuring thread-safe retrieval and addition of custom statuses.
+* **Robust JSON Serialization with System.Text.Json**:
+    * A dedicated `ResultJsonConverter` (implementing `JsonConverterFactory`) now provides robust and explicit serialization and deserialization for `Result` and `Result<T>` types, `ErrorInfo`, and `IResultStatus`.
+    * This ensures consistent and predictable JSON payloads, making integration with APIs and messaging systems seamless. Properties like `isSuccess`, `isfailure`, `status`, `messages`, `errors`, `errorMessage`, and `value` (for `Result<T>`) are explicitly serialized, adhering to `JsonSerializerOptions.PropertyNamingPolicy`.
+* **Enhanced Code Quality and Reliability**:
+    * The internal project directory structure has been reorganized for improved clarity and maintainability.
+    * Test assertions have been simplified and aligned with the new `ErrorInfo` structure, reflecting the enhanced immutability.
+    * General refinements and optimizations have been applied across the codebase, including updates to helper classes like `Guard.cs`.
+    * **Comprehensive Test Coverage**: This release has been rigorously tested and **passes all 166 unit and integration tests**, ensuring high reliability and predictability.
 
 ### Breaking Changes
 
@@ -46,7 +76,7 @@ This release introduces significant enhancements to the Zentient.Results library
 
 ---
 
-## Version 0.3.0 (Previous Release)
+## Version 0.3.0
 
 This release significantly enhances error handling capabilities, strengthens JSON serialization, and introduces robust integration points for ASP.NET Core's Problem Details standard, along with other internal refinements.
 
@@ -127,4 +157,4 @@ This is the inaugural release of the Zentient.Results library, providing a robus
 * **`ResultStatuses` Class**: A static class providing a comprehensive collection of predefined `IResultStatus` instances, largely mapping to standard HTTP status codes (e.g., `Success` (200), `Created` (201), `BadRequest` (400), `Unauthorized` (401), `NotFound` (404), `InternalError` (500)).
 * **`ResultStatusExtensions`**: An extension method `ToHttpStatusCode()` for converting an `IResultStatus` to its integer HTTP status code.
 
-**Last Updated:** 2025-06-07 **Version:** 0.3.0
+**Last Updated:** 2025-06-23 **Version:** 0.4.1
