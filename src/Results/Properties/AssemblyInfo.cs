@@ -1,4 +1,17 @@
 ﻿using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Zentient.Results.Tests")]
+[assembly: InternalsVisibleTo("Zentient.Endpoints")]
+[assembly: InternalsVisibleTo("Zentient.Endpoints.Tests")]
+[assembly: InternalsVisibleTo("Zentient.Endpoints.Analyzers")]
+[assembly: InternalsVisibleTo("Zentient.Endpoints.Analyzers.Tests")]
+[assembly: InternalsVisibleTo("Zentient.Endpoints.Grpc")]
+[assembly: InternalsVisibleTo("Zentient.Endpoints.Grpc.Tests")]
+[assembly: InternalsVisibleTo("Zentient.Endpoints.Http")]
+[assembly: InternalsVisibleTo("Zentient.Endpoints.Http.Tests")]
+[assembly: InternalsVisibleTo("Zentient.Endpoints.Messaging")]
+[assembly: InternalsVisibleTo("Zentient.Endpoints.Messaging.Tests")]
+[assembly: InternalsVisibleTo("Zentient.Endpoints.Tests.Shared")]
+[assembly: InternalsVisibleTo("Zentient.Telemetry")]
+[assembly: InternalsVisibleTo("Zentient.Telemetry.Tests")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
