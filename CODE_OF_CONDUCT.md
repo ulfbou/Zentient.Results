@@ -1,4 +1,4 @@
-# Code of Conduct for Zentient.Results
+# Code of Conduct for Zentient Frameworks
 
 ## Our Pledge
 
