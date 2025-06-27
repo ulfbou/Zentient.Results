@@ -132,7 +132,10 @@ namespace Zentient.Results
         public static IResult Validation(IEnumerable<ErrorInfo> errors)
         {
             var errorMessages = errors.Where(e => !string.IsNullOrWhiteSpace(e.Message)).Select(e => e.Message).ToList();
-            return new Result(ResultStatuses.UnprocessableEntity, errorMessages.Any() ? errorMessages : null, (errors as ErrorInfo[]) ?? errors.ToArray());
+            return new Result(
+                ResultStatuses.UnprocessableEntity,
+                errorMessages.Any() ? errorMessages : null,
+                (errors as ErrorInfo[]) ?? errors.ToArray());
         }
 
         /// <summary>
