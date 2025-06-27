@@ -1,4 +1,4 @@
-﻿// <copyright file="Result.cs" company="Zentient Framework Team">
+// <copyright file="Result.cs" company="Zentient Framework Team">
 // Copyright © 2025 Zentient Framework Team. All rights reserved.
 // </copyright>
 
@@ -11,6 +11,7 @@ using System.Collections.Generic;
 
 using Zentient.Utilities;
 using Zentient.Results.Serialization;
+using Zentient.Results.Constants;
 
 #if NET8_0_OR_GREATER
 using Microsoft.AspNetCore.Http;
@@ -71,24 +72,20 @@ namespace Zentient.Results
         /// <param name="status">The status of the result.</param>
         /// <param name="messages">Optional informational messages.</param>
         /// <param name="errors">Optional error information.</param>
-        [JsonConstructor] // Explicitly inform System.Text.Json to use this constructor
-        internal Result(
-            IResultStatus status,
-            IEnumerable<string>? messages = null,
-            IEnumerable<ErrorInfo>? errors = null)
+        [JsonConstructor]
+        internal Result(IResultStatus status, IEnumerable<string>? messages = null, IEnumerable<ErrorInfo>? errors = null)
         {
             Status = status ?? throw new ArgumentNullException(nameof(status));
-            _errors = errors is null ? Array.Empty<ErrorInfo>() : errors as ErrorInfo[] ?? errors.ToArray();
-            _messages = messages is null ? Array.Empty<string>() : messages as string[] ?? messages.ToArray();
-
-            IsSuccess = (Status.Code >= 200 && Status.Code < 300) && _errors.Length == 0;
+            _errors = ((errors == null) ? Array.Empty<ErrorInfo>() : ((errors as ErrorInfo[]) ?? errors.ToArray()));
+            _messages = ((messages == null) ? Array.Empty<string>() : ((messages as string[]) ?? messages.ToArray()));
+            IsSuccess = Status.Code >= 200 && Status.Code < 300 && _errors.Length == 0;
             IsFailure = !IsSuccess;
 
             ErrorInfo[] errorsCopy = _errors;
             _firstError = new Lazy<string?>(() =>
             {
-                ErrorInfo? error = errorsCopy.FirstOrDefault();
-                return error?.Message ?? error?.Code ?? error?.Metadata?.ToString() ?? null;
+                ErrorInfo? errorInfo = errorsCopy.FirstOrDefault();
+                return errorInfo?.Message ?? errorInfo?.Code ?? errorInfo?.Metadata?.ToString() ?? null;
             });
         }
 
@@ -152,7 +149,10 @@ namespace Zentient.Results
         public static IResult Failure(ErrorInfo error, IResultStatus? status = null)
         {
             ArgumentNullException.ThrowIfNull(error, nameof(error));
-            return new Result(status ?? ResultStatuses.BadRequest, errors: new[] { error });
+
+            var messages = string.IsNullOrWhiteSpace(error.Message) ? null : new string[1] { error.Message };
+
+            return new Result(status ?? ResultStatuses.BadRequest, messages, new ErrorInfo[1] { error });
         }
 
         /// <summary>Creates a non-generic failure result from a collection of errors.</summary>
@@ -163,12 +163,22 @@ namespace Zentient.Results
         /// <exception cref="ArgumentException">Thrown if <paramref name="errors"/> is empty.</exception>
         public static IResult Failure(IEnumerable<ErrorInfo> errors, IResultStatus? status = null)
         {
-            var errorArray = errors as ErrorInfo[] ?? errors?.ToArray() ?? throw new ArgumentNullException(nameof(errors));
-            if (errorArray.Length == 0)
+            ErrorInfo[] array = (errors as ErrorInfo[]) ?? errors?.ToArray() ?? throw new ArgumentNullException(nameof(errors));
+
+            if (array.Length == 0)
             {
                 throw new ArgumentException("Error messages cannot be null or empty.", nameof(errors));
             }
-            return new Result(status ?? ResultStatuses.BadRequest, errors: errorArray);
+
+            var errorMessages = array
+                .Where(e => !string.IsNullOrWhiteSpace(e.Message))
+                .Select(e => e.Message)
+                .ToList();
+
+            return new Result(
+                status ?? ResultStatuses.BadRequest,
+                errorMessages.Any() ? errorMessages : null,
+                array);
         }
 
         /// <summary>Creates a non-generic failure result representing validation errors.</summary>
@@ -176,78 +186,201 @@ namespace Zentient.Results
         /// <returns>A failed <see cref="IResult"/> with status <see cref="ResultStatuses.UnprocessableEntity"/>.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="errors"/> is null.</exception>
         /// <exception cref="ArgumentException">Thrown if <paramref name="errors"/> is empty.</exception>
-        public static IResult Validation(IEnumerable<ErrorInfo> errors) =>
-            Failure(errors, ResultStatuses.UnprocessableEntity);
+        public static IResult Validation(IEnumerable<ErrorInfo> errors)
+        {
+            var errorMessages = errors.Where(e => !string.IsNullOrWhiteSpace(e.Message)).Select(e => e.Message).ToList();
+            return new Result(ResultStatuses.UnprocessableEntity, errorMessages.Any() ? errorMessages : null, (errors as ErrorInfo[]) ?? errors.ToArray());
+        }
 
         /// <summary>Creates a non-generic failure result for "Not Found" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult"/> with status <see cref="ResultStatuses.NotFound"/>.</returns>
-        public static IResult NotFound(string message = "Resource not found", string? code = null) =>
-            Failure(ErrorInfo.NotFound(message, code), ResultStatuses.NotFound);
+        public static IResult NotFound(string message = ResultStatusConstants.Description.NotFound, string? code = null)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                message = ResultStatusConstants.Description.NotFound;
+            }
+
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                code = ResultStatusConstants.Code.NotFound.ToString();
+            }
+
+            return new Result(ResultStatuses.NotFound, new[] { message }, new ErrorInfo[1] { ErrorInfo.NotFound(message, code) });
+        }
 
         /// <summary>Creates a non-generic failure result for "Unauthorized" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult"/> with status <see cref="ResultStatuses.Unauthorized"/>.</returns>
-        public static IResult Unauthorized(string message = "Unauthorized access", string? code = null) =>
-            Failure(ErrorInfo.Unauthorized(message, code), ResultStatuses.Unauthorized);
+        public static IResult Unauthorized(string message = ResultStatusConstants.Description.Unauthorized, string? code = null)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                message = ResultStatusConstants.Description.Unauthorized;
+            }
+
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                code = ResultStatusConstants.Code.Unauthorized.ToString();
+            }
+
+            return new Result(ResultStatuses.Unauthorized, new[] { message }, new ErrorInfo[1] { ErrorInfo.Unauthorized(message, code) });
+        }
 
         /// <summary>Creates a non-generic failure result for "Forbidden" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult"/> with status <see cref="ResultStatuses.Forbidden"/>.</returns>
-        public static IResult Forbidden(string message = "Access to resource is forbidden", string? code = null) =>
-            Failure(ErrorInfo.Forbidden(message, code), ResultStatuses.Forbidden);
+        public static IResult Forbidden(string message = ResultStatusConstants.Description.Forbidden, string? code = null)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                message = ResultStatusConstants.Description.Forbidden;
+            }
+
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                code = ResultStatusConstants.Code.Forbidden.ToString();
+            }
+
+            return new Result(ResultStatuses.Forbidden, new[] { message }, new ErrorInfo[1] { ErrorInfo.Forbidden(message, code) });
+        }
 
         /// <summary>Creates a non-generic failure result for "Conflict" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult"/> with status <see cref="ResultStatuses.Conflict"/>.</returns>
-        public static IResult Conflict(string message = "Conflict occurred", string? code = null) =>
-            Failure(ErrorInfo.Conflict(message, code), ResultStatuses.Conflict);
+        public static IResult Conflict(string message = ResultStatusConstants.Description.Conflict, string? code = null)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                message = ResultStatusConstants.Description.Conflict;
+            }
+
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                code = ResultStatusConstants.Code.Conflict.ToString();
+            }
+
+            return new Result(ResultStatuses.Conflict, new[] { message }, new ErrorInfo[1] { ErrorInfo.Conflict(message, code) });
+        }
 
         /// <summary>Creates a non-generic failure result for "Request Timeout" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult"/> with status <see cref="ResultStatuses.RequestTimeout"/>.</returns>
-        public static IResult RequestTimeout(string message = "Request timed out", string? code = null) =>
-            Failure(new ErrorInfo(ErrorCategory.Timeout, code ?? "RequestTimeout", message), ResultStatuses.RequestTimeout);
+        public static IResult RequestTimeout(string message = ResultStatusConstants.Description.RequestTimeout, string? code = null)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                message = ResultStatusConstants.Description.RequestTimeout;
+            }
+
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                code = ResultStatusConstants.Code.RequestTimeout.ToString();
+            }
+
+            return new Result(ResultStatuses.RequestTimeout, new[] { message }, new ErrorInfo[1] { new ErrorInfo(ErrorCategory.Timeout, code ?? "RequestTimeout", message) });
+        }
 
         /// <summary>Creates a non-generic failure result for "Gone" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult"/> with status <see cref="ResultStatuses.Gone"/>.</returns>
-        public static IResult Gone(string message = "Resource is no longer available", string? code = null) =>
-            Failure(new ErrorInfo(ErrorCategory.ResourceGone, code ?? "Gone", message), ResultStatuses.Gone);
+        public static IResult Gone(string message = ResultStatusConstants.Description.Gone, string? code = null)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                message = ResultStatusConstants.Description.Gone;
+            }
+
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                code = ResultStatusConstants.Code.Gone.ToString();
+            }
+
+            return new Result(ResultStatuses.Gone, new[] { message }, new ErrorInfo[1] { new ErrorInfo(ErrorCategory.ResourceGone, code, message) });
+        }
 
         /// <summary>Creates a non-generic failure result for "Precondition Failed" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult"/> with status <see cref="ResultStatuses.PreconditionFailed"/>.</returns>
-        public static IResult PreconditionFailed(string message = "Precondition failed", string? code = null) =>
-            Failure(new ErrorInfo(ErrorCategory.Validation, code ?? "PreconditionFailed", message), ResultStatuses.PreconditionFailed);
+        public static IResult PreconditionFailed(string message = ResultStatusConstants.Description.PreconditionFailed, string? code = null)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                message = ResultStatusConstants.Description.PreconditionFailed;
+            }
+
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                code = ResultStatusConstants.Code.PreconditionFailed.ToString();
+            }
+
+            return new Result(ResultStatuses.PreconditionFailed, new[] { message }, new ErrorInfo[1] { new ErrorInfo(ErrorCategory.Validation, code, message) });
+        }
 
         /// <summary>Creates a non-generic failure result for "Too Many Requests" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult"/> with status <see cref="ResultStatuses.TooManyRequests"/>.</returns>
-        public static IResult TooManyRequests(string message = "Too many requests", string? code = null) =>
-            Failure(new ErrorInfo(ErrorCategory.RateLimit, code ?? "TooManyRequests", message), ResultStatuses.TooManyRequests);
+        public static IResult TooManyRequests(string message = ResultStatusConstants.Description.TooManyRequests, string? code = null)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                message = ResultStatusConstants.Description.TooManyRequests;
+            }
+
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                code = ResultStatusConstants.Code.TooManyRequests.ToString();
+            }
+
+            return new Result(ResultStatuses.TooManyRequests, new[] { message }, new ErrorInfo[1] { new ErrorInfo(ErrorCategory.RateLimit, code, message) });
+        }
 
         /// <summary>Creates a non-generic failure result for "Not Implemented" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult"/> with status <see cref="ResultStatuses.NotImplemented"/>.</returns>
-        public static IResult NotImplemented(string message = "Operation not implemented", string? code = null) =>
-            Failure(new ErrorInfo(ErrorCategory.NotImplemented, code ?? "NotImplemented", message), ResultStatuses.NotImplemented);
+        public static IResult NotImplemented(string message = ResultStatusConstants.Description.NotImplemented, string? code = null)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                message = ResultStatusConstants.Description.NotImplemented;
+            }
+
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                code = ResultStatusConstants.Code.NotImplemented.ToString();
+            }
+
+            return new Result(ResultStatuses.NotImplemented, new[] { message }, new ErrorInfo[1] { new ErrorInfo(ErrorCategory.NotImplemented, code, message) });
+        }
 
         /// <summary>Creates a non-generic failure result for "Service Unavailable" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult"/> with status <see cref="ResultStatuses.ServiceUnavailable"/>.</returns>
-        public static IResult ServiceUnavailable(string message = "Service is temporarily unavailable", string? code = null) =>
-            Failure(new ErrorInfo(ErrorCategory.ServiceUnavailable, code ?? "ServiceUnavailable", message), ResultStatuses.ServiceUnavailable);
+        public static IResult ServiceUnavailable(string message = ResultStatusConstants.Description.ServiceUnavailable, string? code = null)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                message = ResultStatusConstants.Description.ServiceUnavailable;
+            }
+
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                code = ResultStatusConstants.Code.ServiceUnavailable.ToString();
+            }
+
+            return new Result(ResultStatuses.ServiceUnavailable, new[] { message }, new ErrorInfo[1] { new ErrorInfo(ErrorCategory.ServiceUnavailable, code, message) });
+        }
 
         /// <summary>Creates a non-generic failure result from an exception.</summary>
         /// <param name="ex">The exception to convert into an error.</param>
@@ -260,9 +393,7 @@ namespace Zentient.Results
         public static IResult FromException(Exception ex, IResultStatus? status = null)
         {
             ArgumentNullException.ThrowIfNull(ex, nameof(ex));
-
-            var errorInfo = ErrorInfo.FromException(ex, message: ex.Message);
-            return Failure(errorInfo, status ?? ResultStatuses.Error);
+            return new Result(status ?? ResultStatuses.Error, new[] { ex.Message }, new ErrorInfo[1] { ErrorInfo.FromException(ex, ex.Message) });
         }
 
         /// <inheritdoc />
@@ -333,12 +464,9 @@ namespace Zentient.Results
         /// <inheritdoc />
         public override string ToString()
         {
-            if (IsSuccess)
-            {
-                return $"Result: Success ({Status}){(Messages.Any() ? $" | Messages: {string.Join("; ", Messages)}" : "")}";
-            }
-
-            return $"Result: Failure ({Status}) | Error: {ErrorMessage ?? "No specific error message."} | All Errors: {string.Join("; ", Errors.Select(e => e.ToString()))}";
+            return IsSuccess
+                ? $"Result: Success ({Status}){(Messages.Any() ? $" | Messages: {string.Join("; ", Messages)}" : "")}"
+                : $"Result: Failure ({Status}) | Error: {ErrorMessage ?? "No specific error message."} | All Errors: {string.Join("; ", Errors.Select(e => e.ToString()))}";
         }
 
         /// <inheritdoc />
@@ -369,14 +497,17 @@ namespace Zentient.Results
             var hash = new HashCode();
             hash.Add(Status);
             hash.Add(IsSuccess);
+
             foreach (var error in _errors)
             {
                 hash.Add(error);
             }
+
             foreach (var message in _messages)
             {
                 hash.Add(message);
             }
+
             return hash.ToHashCode();
         }
 
