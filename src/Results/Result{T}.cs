@@ -1,4 +1,4 @@
-﻿// <copyright file="Result{T}.cs" company="Zentient Framework Team">
+// <copyright file="Result{T}.cs" company="Zentient Framework Team">
 // Copyright © 2025 Zentient Framework Team. All rights reserved.
 // </copyright>
 
@@ -113,15 +113,19 @@ namespace Zentient.Results
         /// <param name="error">The error information.</param>
         /// <param name="status">Optional custom status. Defaults to <see cref="ResultStatuses.BadRequest"/>.</param>
         /// <returns>A failed <see cref="IResult{TValue}"/>.</returns>
-        public static IResult<T> Failure(T? value, ErrorInfo error, IResultStatus? status = null) =>
-            new Result<T>(value, status ?? ResultStatuses.BadRequest, null, new[] { error });
+        public static IResult<T> Failure(T? value, ErrorInfo error, IResultStatus? status = null)
+        {
+            ArgumentNullException.ThrowIfNull(error, nameof(error));
+            string[]? messages = (string.IsNullOrWhiteSpace(error.Message) ? null : new string[1] { error.Message });
+            return new Result<T>(value, status ?? ResultStatuses.BadRequest, messages, new ErrorInfo[1] { error });
+        }
 
         /// <summary>Creates a generic failure result from a single error, with default value.</summary>
         /// <param name="error">The error information.</param>
         /// <param name="status">Optional custom status. Defaults to <see cref="ResultStatuses.BadRequest"/>.</param>
         /// <returns>A failed <see cref="IResult{TValue}"/>.</returns>
         public new static IResult<T> Failure(ErrorInfo error, IResultStatus? status = null) =>
-            Failure(default, error, status);
+            Failure(default(T), error, status);
 
         /// <summary>
         /// Creates a generic failure result from a collection of errors.
@@ -134,13 +138,17 @@ namespace Zentient.Results
         /// <returns>A failed <see cref="IResult{TValue}"/>.</returns>
         public static IResult<T> Failure(T? value, IEnumerable<ErrorInfo> errors, IResultStatus? status = null)
         {
-            var arr = errors as ErrorInfo[] ?? errors?.ToArray() ?? throw new ArgumentNullException(nameof(errors));
-            if (arr.Length == 0)
+            ErrorInfo[] array = (errors as ErrorInfo[]) ?? errors?.ToArray() ?? throw new ArgumentNullException(nameof(errors));
+            if (array.Length == 0)
             {
                 throw new ArgumentException("Error messages cannot be null or empty.", nameof(errors));
             }
 
-            return new Result<T>(value, status ?? ResultStatuses.BadRequest, null, arr);
+            List<string> messages = (from e in array
+                                     where !string.IsNullOrWhiteSpace(e.Message)
+                                     select e.Message).ToList();
+
+            return new Result<T>(value, status ?? ResultStatuses.BadRequest, messages.Any() ? messages : null, array);
         }
 
         /// <summary>
@@ -152,83 +160,83 @@ namespace Zentient.Results
         /// <exception cref="ArgumentException">Thrown if <paramref name="errors"/> is empty.</exception>
         /// <returns>A failed <see cref="IResult{TValue}"/>.</returns>
         public new static IResult<T> Failure(IEnumerable<ErrorInfo> errors, IResultStatus? status = null) =>
-            Failure(default, errors, status);
+            Failure(default(T), errors, status);
 
         /// <summary>Creates a generic failure result representing validation errors.</summary>
         /// <param name="errors">A collection of validation errors.</param>
         /// <returns>A failed <see cref="IResult{TValue}"/> with status <see cref="ResultStatuses.UnprocessableEntity"/>.</returns>
         public new static IResult<T> Validation(IEnumerable<ErrorInfo> errors) =>
-            Failure(default, errors, ResultStatuses.UnprocessableEntity);
+            Failure(default(T), errors, ResultStatuses.UnprocessableEntity);
 
         /// <summary>Creates a generic failure result for "Not Found" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult{TValue}"/> with status <see cref="ResultStatuses.NotFound"/>.</returns>
         public new static IResult<T> NotFound(string message = "Resource not found", string? code = null) =>
-            Failure(default, ErrorInfo.NotFound(message, code), ResultStatuses.NotFound);
+            Failure(default(T), ErrorInfo.NotFound(message, code), ResultStatuses.NotFound);
 
         /// <summary>Creates a generic failure result for "Unauthorized" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult{TValue}"/> with status <see cref="ResultStatuses.Unauthorized"/>.</returns>
         public new static IResult<T> Unauthorized(string message = "Unauthorized access", string? code = null) =>
-            Failure(default, ErrorInfo.Unauthorized(message, code), ResultStatuses.Unauthorized);
+            Failure(default(T), ErrorInfo.Unauthorized(message, code), ResultStatuses.Unauthorized);
 
         /// <summary>Creates a generic failure result for "Forbidden" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult{TValue}"/> with status <see cref="ResultStatuses.Forbidden"/>.</returns>
         public new static IResult<T> Forbidden(string message = "Access to resource is forbidden", string? code = null) =>
-            Failure(default, ErrorInfo.Forbidden(message, code), ResultStatuses.Forbidden);
+            Failure(default(T), ErrorInfo.Forbidden(message, code), ResultStatuses.Forbidden);
 
         /// <summary>Creates a generic failure result for "Conflict" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult{TValue}"/> with status <see cref="ResultStatuses.Conflict"/>.</returns>
         public new static IResult<T> Conflict(string message = "Conflict occurred", string? code = null) =>
-            Failure(default, ErrorInfo.Conflict(message, code), ResultStatuses.Conflict);
+            Failure(default(T), ErrorInfo.Conflict(message, code), ResultStatuses.Conflict);
 
         /// <summary>Creates a generic failure result for "Request Timeout" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult{TValue}"/> with status <see cref="ResultStatuses.RequestTimeout"/>.</returns>
         public new static IResult<T> RequestTimeout(string message = "Request timed out", string? code = null) =>
-            Failure(default, new ErrorInfo(ErrorCategory.Timeout, code ?? "RequestTimeout", message), ResultStatuses.RequestTimeout);
+            Failure(default(T), new ErrorInfo(ErrorCategory.Timeout, code ?? "RequestTimeout", message), ResultStatuses.RequestTimeout);
 
         /// <summary>Creates a generic failure result for "Gone" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult{TValue}"/> with status <see cref="ResultStatuses.Gone"/>.</returns>
         public new static IResult<T> Gone(string message = "Resource is no longer available", string? code = null) =>
-            Failure(default, new ErrorInfo(ErrorCategory.ResourceGone, code ?? "Gone", message), ResultStatuses.Gone);
+            Failure(default(T), new ErrorInfo(ErrorCategory.ResourceGone, code ?? "Gone", message), ResultStatuses.Gone);
 
         /// <summary>Creates a generic failure result for "Precondition Failed" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult{TValue}"/> with status <see cref="ResultStatuses.PreconditionFailed"/>.</returns>
         public new static IResult<T> PreconditionFailed(string message = "Precondition failed", string? code = null) =>
-            Failure(default, new ErrorInfo(ErrorCategory.Validation, code ?? "PreconditionFailed", message), ResultStatuses.PreconditionFailed);
+            Failure(default(T), new ErrorInfo(ErrorCategory.Validation, code ?? "PreconditionFailed", message), ResultStatuses.PreconditionFailed);
 
         /// <summary>Creates a generic failure result for "Too Many Requests" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult{TValue}"/> with status <see cref="ResultStatuses.TooManyRequests"/>.</returns>
         public new static IResult<T> TooManyRequests(string message = "Too many requests", string? code = null) =>
-            Failure(default, new ErrorInfo(ErrorCategory.RateLimit, code ?? "TooManyRequests", message), ResultStatuses.TooManyRequests);
+            Failure(default(T), new ErrorInfo(ErrorCategory.RateLimit, code ?? "TooManyRequests", message), ResultStatuses.TooManyRequests);
 
         /// <summary>Creates a generic failure result for "Not Implemented" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult{TValue}"/> with status <see cref="ResultStatuses.NotImplemented"/>.</returns>
         public new static IResult<T> NotImplemented(string message = "Operation not implemented", string? code = null) =>
-            Failure(default, new ErrorInfo(ErrorCategory.NotImplemented, code ?? "NotImplemented", message), ResultStatuses.NotImplemented);
+            Failure(default(T), new ErrorInfo(ErrorCategory.NotImplemented, code ?? "NotImplemented", message), ResultStatuses.NotImplemented);
 
         /// <summary>Creates a generic failure result for "Service Unavailable" scenarios.</summary>
         /// <param name="message">A descriptive error message.</param>
         /// <param name="code">Optional error code.</param>
         /// <returns>A failed <see cref="IResult{TValue}"/> with status <see cref="ResultStatuses.ServiceUnavailable"/>.</returns>
         public new static IResult<T> ServiceUnavailable(string message = "Service is temporarily unavailable", string? code = null) =>
-            Failure(default, new ErrorInfo(ErrorCategory.ServiceUnavailable, code ?? "ServiceUnavailable", message), ResultStatuses.ServiceUnavailable);
+            Failure(default(T), new ErrorInfo(ErrorCategory.ServiceUnavailable, code ?? "ServiceUnavailable", message), ResultStatuses.ServiceUnavailable);
 
         /// <summary>
         /// Creates a generic failure result from an exception.
@@ -240,7 +248,8 @@ namespace Zentient.Results
         public static IResult<T> FromException(T? value, Exception ex, IResultStatus? status = null)
         {
             ArgumentNullException.ThrowIfNull(ex, nameof(ex));
-            return Failure(value, ErrorInfo.FromException(ex), status ?? ResultStatuses.Error);
+            string[]? messages = (string.IsNullOrWhiteSpace(ex.Message) ? null : new string[1] { ex.Message });
+            return new Result<T>(value, status ?? ResultStatuses.Error, messages, new ErrorInfo[1] { ErrorInfo.FromException(ex) });
         }
 
         /// <summary>Allows implicit conversion from a value of type <typeparamref name="T"/> to a successful <see cref="Result{T}"/>.</summary>
