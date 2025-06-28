@@ -1,4 +1,4 @@
-﻿// <copyright file="ResultTests.cs" company="Zentient Framework Team">
+// <copyright file="ResultTests.cs" company="Zentient Framework Team">
 // Copyright © 2025 Zentient Framework Team. All rights reserved.
 // </copyright>
 
@@ -76,7 +76,7 @@ namespace Zentient.Results.Tests
         {
             Action actNull = () => Result.Failure((IEnumerable<ErrorInfo>)null!);
             Action actEmpty = () => Result.Failure(Array.Empty<ErrorInfo>());
-            actNull.Should().Throw<ArgumentException>();
+            actNull.Should().Throw<ArgumentNullException>();
             actEmpty.Should().Throw<ArgumentException>();
         }
 

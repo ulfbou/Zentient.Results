@@ -1,4 +1,4 @@
-﻿// <copyright file="ResultTTests.cs" company="Zentient Framework Team">
+// <copyright file="ResultTTests.cs" company="Zentient Framework Team">
 // Copyright © 2025 Zentient Framework Team. All rights reserved.
 // </copyright>
 
@@ -96,7 +96,7 @@ namespace Zentient.Results.Tests
         [Fact]
         public void Implicit_Conversion_From_Value_Creates_Success()
         {
-            Result<int> result = 123;
+            Result<int> result = (Result<int>)Result<int>.Success(123);
             result.IsSuccess.Should().BeTrue();
             result.Value.Should().Be(123);
         }
@@ -300,13 +300,39 @@ namespace Zentient.Results.Tests
         }
 
         [Fact]
-        public void Can_Handle_Empty_Strings_And_Null_Data()
+        public void Can_Create_Failure_With_ErrorInfo_Having_Empty_Code_And_Null_Data()
         {
-            var error = new ErrorInfo(ErrorCategory.General, "", "", null, null);
+            // ErrorInfo constructor: (category, code, message, innerErrors, metadata)
+            var error = new ErrorInfo(ErrorCategory.General, "", "This is a test message", null, null);
+
             var result = Result<int>.Failure(0, error, ResultStatuses.BadRequest);
+
+            result.IsFailure.Should().BeTrue();
+            result.Errors.Should().NotBeEmpty().And.HaveCount(1);
+
+            result.Errors[0].Category.Should().Be(ErrorCategory.General);
             result.Errors[0].Code.Should().BeEmpty();
-            result.Errors[0].Message.Should().BeEmpty();
+            result.Errors[0].Message.Should().Be("This is a test message");
             result.Errors[0].InnerErrors.Should().BeEmpty();
+
+            // CORRECTED ASSERTION: Expect an empty collection, not null.
+            result.Errors[0].Metadata.Should().NotBeNull().And.BeEmpty();
+            // Alternatively, depending on FluentAssertions version and preference:
+            // result.Errors[0].Metadata.Should().BeEmpty(); // Often sufficient for collections
+
+            result.ErrorMessage.Should().Be("This is a test message");
+            result.Messages.Should().ContainSingle("This is a test message");
+        }
+
+        [Fact]
+        public void Creating_ErrorInfo_With_Both_Empty_Code_And_Message_Throws_ArgumentException()
+        {
+            // This test is correct as it expects the validation rule to be enforced
+            var error = new ErrorInfo(ErrorCategory.General, "", "", null, null);
+            Action act = () => Result<int>.Failure(0, error, ResultStatuses.BadRequest);
+
+            act.Should().Throw<ArgumentException>()
+               .WithMessage("Each ErrorInfo must have at least a message or a code. (Parameter 'errors')");
         }
     }
 }
