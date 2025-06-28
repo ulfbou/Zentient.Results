@@ -1,11 +1,19 @@
 {
-  "extends": ["@commitlint/config-conventional"],
+  "extends": [ "@commitlint/config-conventional" ],
   "rules": {
-    "header-max-length": [0, "always", 120],         // disable or increase subject length
-    "type-enum": [0],                                // allow any type
-    "scope-enum": [0],                               // allow any scope
-    "scope-case": [0],                               // disable scope case enforcement
-    "type-case": [0],                                // disable type case enforcement
-    "subject-case": [0]                              // disable subject case enforcement
+    "header-max-length": [ 0, "always", 120 ],
+    "type-enum": [
+      0,
+      "always",
+      []
+    ],
+    "scope-enum": [
+      0,
+      "always",
+      []
+    ],
+    "scope-case": [ 0, "always" ],
+    "type-case": [ 0, "always" ],
+    "subject-case": [ 0, "always" ]
   }
 }

@@ -4,12 +4,12 @@ updates:
     directory: "/Src/Results"
     schedule:
       interval: "weekly"
-      day: "monday"          # Choose a consistent day for updates
-      time: "02:00"          # UTC time to avoid peak hours
+      day: "monday"
+      time: "02:00"
     open-pull-requests-limit: 5
     commit-message:
       prefix: "deps"
-      include: scope         # Include package name in commit messages for clarity
+      include: scope
     ignore:
       - dependency-name: "Microsoft.NET.Test.Sdk"
         versions:
@@ -35,6 +35,5 @@ updates:
     labels:
       - "dependencies"
       - "nuget"
-      
     allow:
       - dependency-type: "direct"
