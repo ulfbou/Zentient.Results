@@ -10,6 +10,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.ref }}
+      cancel-in-progress: true
 
     steps:
       - name: Checkout code
@@ -17,18 +20,18 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v3 
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.sln') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.x
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
 
       - name: Install GitVersion
         uses: GitTools/actions/gitversion/setup@v0.10.2
@@ -39,35 +42,31 @@ jobs:
         id: gitversion
         uses: GitTools/actions/gitversion/execute@v0.10.2
 
-      - name: Lint commit messages
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Lint commits
         uses: wagoid/commitlint-github-action@v5
+        with:
+          configFile: ./commitlint.config.js
+          failOnWarnings: false
+          failOnErrors: true
+          helpURL: https://github.com/conventional-changelog/commitlint/#what-is-commitlint
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore Zentient.Results.sln
 
       - name: Build (Release)
-        run: dotnet build -c Release /p:Version=${{ steps.gitversion.outputs.NuGetVersionV2 }}
+        run: dotnet build Zentient.Results.sln -c Release /p:Version=${{ steps.gitversion.outputs.NuGetVersionV2 }}
 
       - name: Run Tests
-        run: dotnet test -c Release --no-build --logger trx --results-directory TestResults
-
-      - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: TestResults/*.trx
+        run: dotnet test Zentient.Results.sln --no-build --configuration Release
 
       - name: Pack NuGet Package
-        run: dotnet pack -c Release --no-build /p:Version=${{ steps.gitversion.outputs.NuGetVersionV2 }}
-
-      - name: Upload NuGet Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuget-packages
-          path: '**/*.nupkg'
+        run: dotnet pack Src/Results/Zentient.Results.csproj -c Release /p:Version=${{ steps.gitversion.outputs.NuGetVersionV2 }} --no-build
 
       - name: Publish NuGet Package
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
-        run: |
-          dotnet nuget push "**/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate
+        run: dotnet nuget push "**/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate
