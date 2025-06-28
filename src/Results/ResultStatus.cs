@@ -1,8 +1,6 @@
-﻿// <copyright file="ResultStatus.cs" company="Zentient Framework Team">
-// Copyright © 2025 Zentient Framework Team. All rights reserved.
-// </copyright>
-
-using System.Net;
+using System;
+using System.Net; // This using directive is no longer needed after removing FromHttpStatusCode
+using System.Collections.Generic; // For IEquatable if not already imported
 
 namespace Zentient.Results
 {
@@ -34,16 +32,9 @@ namespace Zentient.Results
         /// <returns>A new <see cref="ResultStatus"/> instance.</returns>
         public static ResultStatus Custom(int code, string description) => new(code, description);
 
-        /// <summary>Creates a <see cref="ResultStatus"/> from an HTTP status code.</summary>
-        /// <param name="statusCode">The HTTP status code to convert.</param>
-        /// <returns>A new <see cref="IResultStatus"/> instance representing the HTTP status code.</returns>
-        public static IResultStatus FromHttpStatusCode(int statusCode)
-        {
-            var httpStatusCode = (HttpStatusCode)statusCode;
-            string description = httpStatusCode.ToString();
-
-            return ResultStatuses.GetStatus(statusCode, description);
-        }
+        // REMOVED: public static IResultStatus FromHttpStatusCode(int statusCode)
+        // This method introduced an unwanted dependency on HTTP concerns in the core Results library.
+        // Its functionality should reside in Zentient.Endpoints.Http.
 
         /// <summary>
         /// Returns a string representation of the result status.
@@ -64,11 +55,11 @@ namespace Zentient.Results
             HashCode.Combine(Code, Description);
 
         /// <inheritdoc />
-        public static bool operator ==(ResultStatus? left, ResultStatus? right) =>
-            Equals(left, right);
+        public static bool operator ==(ResultStatus left, ResultStatus right) => // Changed from nullable to non-nullable for structs
+            left.Equals(right); // Use struct's Equals for operators
 
         /// <inheritdoc />
-        public static bool operator !=(ResultStatus? left, ResultStatus? right) =>
-            !Equals(left, right);
+        public static bool operator !=(ResultStatus left, ResultStatus right) => // Changed from nullable to non-nullable for structs
+            !left.Equals(right); // Use struct's Equals for operators
     }
 }
