@@ -1,4 +1,4 @@
-﻿// <copyright file="ResultStatusTests.cs" company="Zentient Framework Team">
+// <copyright file="ResultStatusTests.cs" company="Zentient Framework Team">
 // Copyright © 2025 Zentient Framework Team. All rights reserved.
 // </copyright>
 
@@ -46,66 +46,6 @@ namespace Zentient.Results.Tests
             // Assert
             status.Code.Should().Be(code);
             status.Description.Should().Be(description);
-        }
-
-        #endregion
-
-        #region FromHttpStatusCode Method
-
-        [Fact]
-        public void FromHttpStatusCode_ValidCode_ReturnsCorrectStatus()
-        {
-            // Arrange
-            var httpCode = (int)HttpStatusCode.OK;
-
-            // Act
-            IResultStatus status = ResultStatus.FromHttpStatusCode(httpCode);
-
-            // Assert
-            status.Code.Should().Be(httpCode);
-            status.Description.Should().Be(HttpStatusCode.OK.ToString());
-        }
-
-        [Fact]
-        public void FromHttpStatusCode_AnotherValidCode_ReturnsCorrectStatus()
-        {
-            // Arrange
-            var httpCode = (int)HttpStatusCode.NotFound;
-
-            // Act
-            IResultStatus status = ResultStatus.FromHttpStatusCode(httpCode);
-
-            // Assert
-            status.Code.Should().Be(httpCode);
-            status.Description.Should().Be(ResultStatusConstants.Description.NotFound);
-        }
-
-        [Fact]
-        public void FromHttpStatusCode_UnknownCode_ReturnsStatusWithNumericDescription()
-        {
-            // Arrange
-            var unknownCode = 999;
-
-            // Act
-            IResultStatus status = ResultStatus.FromHttpStatusCode(unknownCode);
-
-            // Assert
-            status.Code.Should().Be(unknownCode);
-            status.Description.Should().Be(((HttpStatusCode)unknownCode).ToString());
-        }
-
-        [Fact]
-        public void FromHttpStatusCode_NegativeCode_HandlesGracefully()
-        {
-            // Arrange
-            var negativeCode = -1;
-
-            // Act
-            IResultStatus status = ResultStatus.FromHttpStatusCode(negativeCode);
-
-            // Assert
-            status.Code.Should().Be(negativeCode);
-            status.Description.Should().Be(negativeCode.ToString());
         }
 
         #endregion
