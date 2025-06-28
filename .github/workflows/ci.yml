@@ -21,16 +21,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: (Debug) List workspace contents
+      - name: (Debug) workspace state
         run: |
           echo "Current working directory: $(pwd)"
-          echo "Listing contents of /github/workspace:"
-          ls -R /github/workspace
-          echo "Listing contents of solution directory:"
+          echo "Listing contents of current directory:"
           ls -R .
-          echo "Contents of Zentient.Results.sln:"
-          cat Zentient.Results.sln
-        shell: bash
+          if [ -f Zentient.Results.sln ]; then
+            echo "Contents of Zentient.Results.sln:"
+            cat Zentient.Results.sln
+          else
+            echo "ERROR: Zentient.Results.sln not found!" >&2
+            exit 1
+          fi
 
       - name: Cache NuGet packages
         uses: actions/cache@v3
