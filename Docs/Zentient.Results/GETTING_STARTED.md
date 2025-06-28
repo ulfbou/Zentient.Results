@@ -1,16 +1,26 @@
-Okay, let's refine the "Getting Started" guide to fully align with the 0.4.0 changes, particularly the shift from `struct` to `class` for `Result` types, the enhancements to `ErrorInfo`, and the updated property names.
-
-Here's the updated content for your `Getting_Started.md` file:
+Here's the updated "Getting Started with Zentient.Results" guide, now fully aligned with the Zentient Framework's documentation standards and reflecting the `0.4.4` changes.
 
 -----
 
-# Getting Started with Zentient.Results
+# 🚀 Getting Started with Zentient.Results
 
-This guide will walk you through the process of integrating and effectively using the Zentient.Results library in your .NET projects. Zentient.Results provides a powerful and idiomatic way to handle operation outcomes, promoting explicit success and failure states, and enhancing the robustness and readability of your codebase.
+📁 Location: `/docs/getting-started.md`
+📅 Last Updated: 2025-06-28
+📄 Status: ✅ Active Guideline
+📦 Module: `Zentient.Results`
+🏷️ Version: `v0.4.4`
 
-## 1\. Installation
+-----
 
-The easiest way to add Zentient.Results to your project is via NuGet Package Manager.
+## ➡️ Purpose
+
+This guide will walk you through the process of integrating and effectively using the `Zentient.Results` library in your .NET projects. `Zentient.Results` provides a powerful and idiomatic way to handle operation outcomes, promoting explicit success and failure states, and enhancing the robustness and readability of your codebase.
+
+-----
+
+## ⬇️ 1. Installation
+
+The easiest way to add `Zentient.Results` to your project is via NuGet Package Manager.
 
 ### Using .NET CLI
 
@@ -36,21 +46,23 @@ Install-Package Zentient.Results
 4.  Search for `Zentient.Results`.
 5.  Select the package and click "Install".
 
-## 2\. Basic Usage
+-----
 
-Zentient.Results primarily revolves around the `Result<T>` and `Result` **classes**.
+## 💡 2. Basic Usage
+
+`Zentient.Results` primarily revolves around the **`Result<T>`** and **`Result` classes**.
 
 ### 2.1 Handling Operations with a Return Value (`Result<T>`)
 
 For operations that produce a value upon success, use `Result<T>`.
 
-#### Success Example
+#### Success and Failure Example
 
 ```csharp
 using Zentient.Results;
 using System;
 using System.Linq;
-using System.Collections.Generic; // Added for List<ErrorInfo>
+using System.Collections.Generic;
 
 public class UserService
 {
@@ -93,7 +105,7 @@ public class Application
         }
         else
         {
-            Console.WriteLine($"Failed to retrieve user: {userResult.ErrorMessage}"); // Updated property
+            Console.WriteLine($"Failed to retrieve user: {userResult.ErrorMessage}");
             Console.WriteLine($"Status: {userResult.Status.Description} ({userResult.Status.Code})");
             foreach (var error in userResult.Errors)
             {
@@ -112,7 +124,7 @@ public class Application
         }
         else
         {
-            Console.WriteLine($"Failed to retrieve user: {failedUserResult.ErrorMessage}"); // Updated property
+            Console.WriteLine($"Failed to retrieve user: {failedUserResult.ErrorMessage}");
             Console.WriteLine($"Status: {failedUserResult.Status.Description} ({failedUserResult.Status.Code})");
             foreach (var error in failedUserResult.Errors)
             {
@@ -145,13 +157,13 @@ public class AnotherUserService
 
 ### 2.2 Handling Operations Without a Return Value (`Result`)
 
-For operations that don't return a specific value but still indicate success or failure (e.g., a `void` method), use the non-generic `Result` **class**.
+For operations that don't return a specific value but still indicate success or failure (e.g., a `void` method), use the non-generic **`Result` class**.
 
 ```csharp
 using Zentient.Results;
 using System;
 using System.Linq;
-using System.Collections.Generic; // Added for List<ErrorInfo>
+using System.Collections.Generic;
 
 public class DataWriter
 {
@@ -191,7 +203,7 @@ public class AnotherApplication
         }
         else
         {
-            Console.WriteLine($"Operation failed: {writeResult1.ErrorMessage}"); // Updated property
+            Console.WriteLine($"Operation failed: {writeResult1.ErrorMessage}");
         }
 
         Console.WriteLine("\n---");
@@ -203,7 +215,7 @@ public class AnotherApplication
         }
         else
         {
-            Console.WriteLine($"Operation failed: {writeResult2.ErrorMessage}"); // Updated property
+            Console.WriteLine($"Operation failed: {writeResult2.ErrorMessage}");
             Console.WriteLine($"Status: {writeResult2.Status.Description} ({writeResult2.Status.Code})");
         }
     }
@@ -217,19 +229,24 @@ An `ErrorInfo` can be implicitly converted to a failed `Result`.
 ```csharp
 using Zentient.Results;
 
-public IResult DeleteItem(int id)
+public class ItemDeleter
 {
-    if (id <= 0)
+    public IResult DeleteItem(int id)
     {
-        // Implicitly converts to a failed Result with a Validation status
-        return ErrorInfo.Validation("INVALID_ID", "Item ID must be positive.");
+        if (id <= 0)
+        {
+            // Implicitly converts to a failed Result with a Validation status
+            return ErrorInfo.Validation("INVALID_ID", "Item ID must be positive.");
+        }
+        // Perform deletion...
+        return Result.NoContent("Item deleted.");
     }
-    // Perform deletion...
-    return Result.NoContent("Item deleted.");
 }
 ```
 
-## 3\. Working with Errors (`ErrorInfo` and `ErrorCategory`)
+-----
+
+## ❌ 3. Working with Errors (`ErrorInfo` and `ErrorCategory`)
 
 `ErrorInfo` is a central piece for detailed error reporting. It is now a `sealed class` that provides rich context for failures.
 
@@ -238,7 +255,7 @@ using Zentient.Results;
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Collections.Immutable; // Added for ImmutableDictionary/List
+using System.Collections.Immutable; // Required for ImmutableDictionary/List
 
 public class PaymentProcessor
 {
@@ -251,7 +268,7 @@ public class PaymentProcessor
                 ErrorInfo.Validation(
                     "AMOUNT_INVALID",
                     "Payment amount must be greater than zero.",
-                    detail: $"The submitted amount was {amount}.", // New 'detail' property
+                    detail: $"The submitted amount was {amount}.", // 'detail' property
                     metadata: ImmutableDictionary<string, object?>.Empty.Add("SubmittedAmount", amount)
                 )
             );
@@ -278,7 +295,7 @@ public class PaymentProcessor
         // Simulating multiple validation errors
         if (amount == 42)
         {
-             return Result.Validation(new[]
+            return Result.Validation(new[]
             {
                 ErrorInfo.Validation("MAGIC_NUMBER_ERROR", "42 is not allowed."),
                 new ErrorInfo(ErrorCategory.General, "INVALID_VALUE", "This amount has a special meaning and cannot be processed.")
@@ -300,15 +317,15 @@ public class PaymentApplication
 
         if (result.IsFailure)
         {
-            Console.WriteLine($"Payment Failed: {result.ErrorMessage}"); // Updated property
+            Console.WriteLine($"Payment Failed: {result.ErrorMessage}");
             foreach (var error in result.Errors)
             {
                 Console.WriteLine($"  - [{error.Category}:{error.Code}] {error.Message}");
-                if (!string.IsNullOrEmpty(error.Detail)) // Check for new 'detail' property
+                if (!string.IsNullOrEmpty(error.Detail))
                 {
                     Console.WriteLine($"    Detail: {error.Detail}");
                 }
-                if (error.Metadata != null && error.Metadata.Any()) // Check for new 'metadata' property
+                if (error.Metadata != null && error.Metadata.Any())
                 {
                     Console.WriteLine($"    Metadata:");
                     foreach (var kvp in error.Metadata)
@@ -322,46 +339,53 @@ public class PaymentApplication
 }
 ```
 
-## 4\. Result Statuses (`ResultStatuses`)
+-----
+
+## 🚦 4. Result Statuses (`ResultStatuses`)
 
 `ResultStatuses` provides a convenient collection of pre-defined `IResultStatus` instances, aligning with common HTTP status codes.
 
 ```csharp
 using Zentient.Results;
-using System.Collections.Generic; // Added for List<ErrorInfo>
+using System.Collections.Generic;
 
-public IResult ValidateApiKey(string apiKey)
+public class ApiKeyValidator
 {
-    if (string.IsNullOrWhiteSpace(apiKey))
+    public IResult ValidateApiKey(string apiKey)
     {
-        return Result.Unauthorized(); // Uses ResultStatuses.Unauthorized (401)
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            return Result.Unauthorized(); // Uses ResultStatuses.Unauthorized (401)
+        }
+        if (apiKey != "VALID_KEY")
+        {
+            return Result.Forbidden(
+                new ErrorInfo(ErrorCategory.Authorization, "INVALID_API_KEY", "Provided API key is not valid.")
+            ); // Uses ResultStatuses.Forbidden (403)
+        }
+        return Result.Success(ResultStatuses.Accepted, "API Key validated.");
     }
-    if (apiKey != "VALID_KEY")
-    {
-        return Result.Forbidden(
-            new ErrorInfo(ErrorCategory.Authorization, "INVALID_API_KEY", "Provided API key is not valid.")
-        ); // Uses ResultStatuses.Forbidden (403)
-    }
-    return Result.Success(ResultStatuses.Accepted, "API Key validated.");
-}
 
-// You can also create custom statuses using ResultStatus.Custom or ResultStatuses.GetStatus:
-public IResult HandleRateLimit()
-{
-    // Using a predefined HTTP-aligned status from ResultStatuses
-    return Result.Failure(
-        ErrorInfo.General("RATE_LIMIT_EXCEEDED", "You have exceeded the request limit."),
-        ResultStatuses.TooManyRequests // Now directly available in ResultStatuses
-    );
-    // Alternatively, define a truly custom one:
-    // return Result.Failure(
-    //     ErrorInfo.General("CUSTOM_LIMIT_EXCEEDED", "Your custom limit was exceeded."),
-    //     ResultStatus.Custom(9000, "Custom Rate Limited Status")
-    // );
+    // You can also create custom statuses using ResultStatus.Custom or ResultStatuses.GetStatus:
+    public IResult HandleRateLimit()
+    {
+        // Using a predefined HTTP-aligned status from ResultStatuses
+        return Result.Failure(
+            ErrorInfo.General("RATE_LIMIT_EXCEEDED", "You have exceeded the request limit."),
+            ResultStatuses.TooManyRequests
+        );
+        // Alternatively, define a truly custom one:
+        // return Result.Failure(
+        //      ErrorInfo.General("CUSTOM_LIMIT_EXCEEDED", "Your custom limit was exceeded."),
+        //      ResultStatus.Custom(9000, "Custom Rate Limited Status")
+        // );
+    }
 }
 ```
 
-## 5\. Functional Operations (`Map`, `Bind`, `Then`, `OnSuccess`, `OnFailure`, `Tap`)
+-----
+
+## 🔗 5. Functional Operations (`Map`, `Bind`, `Then`, `OnSuccess`, `OnFailure`, `Tap`)
 
 These methods allow for powerful chaining and handling of `Result<T>` and `Result` instances, especially useful in a functional programming style.
 
@@ -369,7 +393,7 @@ These methods allow for powerful chaining and handling of `Result<T>` and `Resul
 using Zentient.Results;
 using System;
 using System.Linq;
-using System.Threading.Tasks; // Added for async operations
+using System.Threading.Tasks; // Required for async operations
 
 public class DataProcessor
 {
@@ -456,14 +480,16 @@ public class FunctionalApplication
 }
 ```
 
-## 6\. Value Access Strategies (`GetValueOrThrow`, `GetValueOrDefault`)
+-----
+
+## 🎯 6. Value Access Strategies (`GetValueOrThrow`, `GetValueOrDefault`)
 
 Choose the appropriate method for retrieving the value based on your error handling philosophy.
 
 ```csharp
 using Zentient.Results;
 using System;
-using System.Linq; // Added for LINQ extensions on Errors
+using System.Linq; // Required for LINQ extensions on Errors
 
 public class ItemService
 {
@@ -544,9 +570,11 @@ public class CustomItemNotFoundException : Exception
 }
 ```
 
-## 7\. JSON Serialization
+-----
 
-Zentient.Results provides built-in JSON serialization support using `System.Text.Json` via `ResultJsonConverter`.
+## 📤 7. JSON Serialization
+
+`Zentient.Results` provides built-in JSON serialization support using `System.Text.Json` via `ResultJsonConverter`.
 
 To enable serialization, you need to add `ResultJsonConverter` to your `JsonSerializerOptions`.
 
@@ -557,6 +585,7 @@ using System.Text.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Collections.Immutable; // Required for ImmutableDictionary
 
 public class SerializationExample
 {
@@ -590,7 +619,7 @@ public class SerializationExample
             {
                 new ErrorInfo(ErrorCategory.Validation, "INVALID_EMAIL", "Email format is incorrect.", detail: "The provided email 'test@example' does not match the required pattern."),
                 new ErrorInfo(ErrorCategory.Security, "PASSWORD_WEAK", "Password does not meet complexity requirements.",
-                    metadata: new Dictionary<string, object?> { { "MinLength", 8 }, { "RequiresSymbol", true } }.ToImmutableDictionary()) // Using ImmutableDictionary
+                    metadata: new Dictionary<string, object?> { { "MinLength", 8 }, { "RequiresSymbol", true } }.ToImmutableDictionary())
             }, ResultStatuses.UnprocessableEntity);
 
         string jsonFailure = JsonSerializer.Serialize(failureResult, options);
@@ -607,7 +636,8 @@ public class SerializationExample
             Console.WriteLine($"First error detail: {deserializedFailure.Errors[0].Detail}");
             if (deserializedFailure.Errors.Count > 1 && deserializedFailure.Errors[1].Metadata.Any())
             {
-                Console.WriteLine($"Second error metadata (MinLength): {deserializedFailure.Errors[1].Metadata["minLength"]}"); // Access using camelCase for JSON property
+                // Access using camelCase due to PropertyNamingPolicy
+                Console.WriteLine($"Second error metadata (MinLength): {deserializedFailure.Errors[1].Metadata["minLength"]}");
             }
         }
         Console.WriteLine("\n---");
