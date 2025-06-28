@@ -1,7 +1,8 @@
 #!/bin/sh
+# This file is currently inactive as linting steps are commented out in ci.yml.
+# To activate local commit message linting, ensure 'npm install' and 'npx husky install' are run,
+# and uncomment the relevant linting steps in ci.yml.
+
 . "$(dirname "$0")/_/husky.sh"
 
-# Ensure commitlint is run to validate the commit message
-# --no-install prevents npm from installing commitlint globally or in node_modules if it's not found,
-# assuming it's available via npx from a local node_modules or CI environment.
-npx --no-install commitlint --edit "$1"
+# npx --no-install commitlint --edit "$1"

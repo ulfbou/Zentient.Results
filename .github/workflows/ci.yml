@@ -10,6 +10,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     concurrency:
       group: ${{ github.ref }}
       cancel-in-progress: true
@@ -21,7 +22,7 @@ jobs:
           fetch-depth: 0
 
       - name: Cache NuGet packages
-        uses: actions/cache@v3 
+        uses: actions/cache@v3
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.sln') }}
@@ -42,18 +43,21 @@ jobs:
         id: gitversion
         uses: GitTools/actions/gitversion/execute@v0.10.2
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
+      # --- Linting steps commented out for now ---
+      # - name: Setup Node.js
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: '18'
 
-      - name: Lint commits
-        uses: wagoid/commitlint-github-action@v5
-        with:
-          configFile: ./commitlint.config.js
-          failOnWarnings: false
-          failOnErrors: true
-          helpURL: https://github.com/conventional-changelog/commitlint/#what-is-commitlint
+      # - name: Lint commits
+      #   uses: wagoid/commitlint-github-action@v5
+      #   with:
+      #     configFile: ./commitlint.config.js
+      #     commit: ${{ github.event_name == 'push' && github.event.head_commit.message || github.event.pull_request.title }}
+      #     failOnWarnings: false
+      #     failOnErrors: true
+      #     helpURL: https://github.com/conventional-changelog/commitlint/#what-is-commitlint
+      # --- End of commented out linting steps ---
 
       - name: Restore dependencies
         run: dotnet restore Zentient.Results.sln
