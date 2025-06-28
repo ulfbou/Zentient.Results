@@ -21,6 +21,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: (Debug) List workspace contents
+        run: |
+          echo "Current working directory: $(pwd)"
+          echo "Listing contents of /github/workspace:"
+          ls -R /github/workspace
+          echo "Listing contents of solution directory:"
+          ls -R .
+          echo "Contents of Zentient.Results.sln:"
+          cat Zentient.Results.sln
+        shell: bash
+
       - name: Cache NuGet packages
         uses: actions/cache@v3
         with:
@@ -43,12 +54,11 @@ jobs:
         id: gitversion
         uses: GitTools/actions/gitversion/execute@v0.10.2
 
-      # --- Linting steps commented out for now ---
+      # Linting steps are commented out as per previous request
       # - name: Setup Node.js
       #   uses: actions/setup-node@v4
       #   with:
       #     node-version: '18'
-
       # - name: Lint commits
       #   uses: wagoid/commitlint-github-action@v5
       #   with:
@@ -57,7 +67,6 @@ jobs:
       #     failOnWarnings: false
       #     failOnErrors: true
       #     helpURL: https://github.com/conventional-changelog/commitlint/#what-is-commitlint
-      # --- End of commented out linting steps ---
 
       - name: Restore dependencies
         run: dotnet restore Zentient.Results.sln
