@@ -1,4 +1,4 @@
-﻿# Designing Safer APIs: Composable Outcomes in .NET Development
+# Designing Safer APIs: Composable Outcomes in .NET Development
 
 Have you ever found yourself tangled in a web of `if (x == null)` checks, or dreading that an unexpected exception might derail your carefully crafted asynchronous workflow? Modern .NET development, especially in API design, often grapples with these challenges. We strive for robust, readable, and predictable code, but traditional error handling can frequently get in the way.
 
@@ -145,6 +145,6 @@ By adopting Zentient.Results, you're not just implementing a library; you're emb
 
 Ready to explore further? Dive into the official Zentient.Results wiki for more in-depth examples and advanced patterns:
 
-**👉 [Read More: Designing Safer APIs with Zentient.Results](https://www.google.com/search?q=wiki/articles/designing-safer-apis.md)**
+**👉 [Read More: Designing Safer APIs with Zentient.Results](wiki/articles/designing-safer-apis.md)**
 
 \#dotnet \#csharp \#api \#softwaredevelopment \#cleanarchitecture \#functionalprogramming

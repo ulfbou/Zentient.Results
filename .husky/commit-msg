@@ -1,0 +1,7 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Ensure commitlint is run to validate the commit message
+# --no-install prevents npm from installing commitlint globally or in node_modules if it's not found,
+# assuming it's available via npx from a local node_modules or CI environment.
+npx --no-install commitlint --edit "$1"
