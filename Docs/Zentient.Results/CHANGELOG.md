@@ -1,7 +1,43 @@
 # Zentient.Results Changelog
 
 ---
-## Version 0.4.1 (Current Release)
+Here's the rewritten 0.4.2 section of the Changelog, omitting any mention of `Zentient.Results.AspNetCore` as a breaking change:
+
+---
+## Version 0.4.2 (Current release)
+
+This is a patch update focused on further enhancing the robustness, consistency, and internal clarity of `Result` object creation and error handling. This release refines how errors and messages are managed within the core `Result` types and streamlines factory methods.
+
+### New Features
+
+* **Refined Error and Message Handling in `Result` and `Result<T>`:**
+    * The `Result` constructor and `Failure` factory methods for both `Result` (non-generic) and `Result<T>` have been improved. They now reliably extract messages from `ErrorInfo` objects and exceptions (in `FromException`) and populate the `Messages` collection, ensuring that all relevant error details are available.
+    * Standardized the use of `default(T)` across `Result<T>` failure factory methods for improved type consistency and clarity.
+
+* **Streamlined Result Factory Methods:**
+    * The static factory methods for common failure scenarios (e.g., `NotFound`, `Unauthorized`, `Validation`, `Conflict`, `RequestTimeout`, `Gone`, etc.) on both `Result` and `Result<T>` have been refactored. They now leverage `Zentient.Results.Constants.ResultStatusConstants` for standardized default messages and error codes, promoting greater consistency across various failure types.
+
+* **Enhanced Test Coverage and Validation:**
+    * Updated existing tests and added new ones in `ResultTTests.cs` and `ResultTests.cs` to explicitly verify the correct propagation of error messages and the handling of null/empty error collections.
+    * Refined assertions in tests, specifically for `ErrorInfo.Metadata`, to correctly expect an empty collection rather than a null value.
+    * Adjusted expected exception types in tests to accurately reflect current argument validation behavior (e.g., `ArgumentNullException` for null error collections when expected).
+    * Removed `FromHttpStatusCode` tests from `ResultStatusTests.cs` to align with the removal of the corresponding method from `ResultStatus`.
+
+* **Codebase Clean-up and Consistency:**
+    * Removed unnecessary Byte Order Mark (BOM) characters from `Result.cs`, `Result{T}.cs`, `ResultStatusTests.cs`, `ResultTTests.cs`, and `ResultTests.cs` for minor encoding detail improvements.
+    * Made minor adjustments to the implicit conversion test in `ResultTTests.cs` for explicit clarity.
+    * Updated the version in `Zentient.Results.csproj` to 0.4.2.
+
+### Breaking Changes
+
+* **No new breaking changes** in this patch release. `Zentient.Results 0.4.2` is compatible with `Zentient.Results 0.4.1` and `0.4.0` at the core public API level. Any breaking changes from 0.4.0 (e.g., `Result` and `Result<T>` transitioning to sealed classes, `IResult.Error` renamed to `ErrorMessage`) still apply if you are upgrading from versions prior to 0.4.0.
+
+### Bug Fixes
+
+* Corrected handling of null or empty messages in `Result` and `Result<T>` factory methods to ensure the `Messages` collection accurately reflects available information.
+* Fixed a potential issue where `_firstError` lazy initialization might return null inappropriately if `ErrorInfo` did not contain a message or code.
+
+## Version 0.4.1 (Previous Release)
 
 This is a patch release focused on enhancing the integration and compatibility of `Zentient.Results` with other libraries within the Zentient ecosystem, specifically addressing internal visibility concerns.
 
@@ -157,4 +193,4 @@ This is the inaugural release of the Zentient.Results library, providing a robus
 * **`ResultStatuses` Class**: A static class providing a comprehensive collection of predefined `IResultStatus` instances, largely mapping to standard HTTP status codes (e.g., `Success` (200), `Created` (201), `BadRequest` (400), `Unauthorized` (401), `NotFound` (404), `InternalError` (500)).
 * **`ResultStatusExtensions`**: An extension method `ToHttpStatusCode()` for converting an `IResultStatus` to its integer HTTP status code.
 
-**Last Updated:** 2025-06-23 **Version:** 0.4.1
+**Last Updated:** 2025-06-23 **Version:** 0.4.2
