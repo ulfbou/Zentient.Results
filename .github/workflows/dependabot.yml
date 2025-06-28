@@ -1,18 +1,40 @@
 version: 2
 updates:
   - package-ecosystem: "nuget"
-    directory: "Src/Results/"
+    directory: "/Src/Results"
     schedule:
       interval: "weekly"
+      day: "monday"          # Choose a consistent day for updates
+      time: "02:00"          # UTC time to avoid peak hours
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"
+      include: scope         # Include package name in commit messages for clarity
     ignore:
       - dependency-name: "Microsoft.NET.Test.Sdk"
-        versions: ["17.x"]
+        versions:
+          - "17.x"
+    labels:
+      - "dependencies"
+      - "nuget"
+
   - package-ecosystem: "nuget"
-    directory: "Src/AspNetCore/"
+    directory: "/Src/AspNetCore"
     schedule:
-      interval: "weekly" # Check for updates once a week
+      interval: "weekly"
+      day: "monday"
+      time: "02:00"
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"
+      include: scope
     ignore:
       - dependency-name: "Microsoft.NET.Test.Sdk"
-        versions: ["17.x"]
+        versions:
+          - "17.x"
+    labels:
+      - "dependencies"
+      - "nuget"
+      
+    allow:
+      - dependency-type: "direct"

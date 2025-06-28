@@ -1,41 +1,73 @@
-name: Validate Documentation
+name: CI & Release
 
 on:
   push:
-    branches: [main]
-    paths:
-      - 'Zentient.Results/**/*.md'
-      - 'Zentient.Results.AspNetCore/**/*.md'
-      - 'Zentient.Utilities/**/*.md'
+    branches:
+      - main
+      - 'release/**'
   pull_request:
-    branches: [main]
-    paths:
-      - 'Zentient.Results/**/*.md'
-      - 'Zentient.Results.AspNetCore/**/*.md'
-      - 'Zentient.Utilities/**/*.md'
 
 jobs:
-  lint-docs:
+  build:
     runs-on: ubuntu-latest
-    name: Lint Markdown Documentation
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Lint Markdown files
-      uses: DavidAnson/markdownlint-cli2-action@v14
-      with:
-        globs: |
-          Zentient.Results/**/*.md
-          Zentient.Results.AspNetCore/**/*.md
-          Zentient.Utilities/**/*.md
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
 
-    - name: Upload docs as artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: documentation-markdown
-        path: |
-          Zentient.Results/
-          Zentient.Results.AspNetCore/
-          Zentient.Utilities/
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Install GitVersion
+        uses: GitTools/actions/gitversion/setup@v0.10.2
+        with:
+          versionSpec: '5.x'
+
+      - name: Determine Semantic Version
+        id: gitversion
+        uses: GitTools/actions/gitversion/execute@v0.10.2
+
+      - name: Lint commit messages
+        uses: wagoid/commitlint-github-action@v5
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build (Release)
+        run: dotnet build -c Release /p:Version=${{ steps.gitversion.outputs.NuGetVersionV2 }}
+
+      - name: Run Tests
+        run: dotnet test -c Release --no-build --logger trx --results-directory TestResults
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/*.trx
+
+      - name: Pack NuGet Package
+        run: dotnet pack -c Release --no-build /p:Version=${{ steps.gitversion.outputs.NuGetVersionV2 }}
+
+      - name: Upload NuGet Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: '**/*.nupkg'
+
+      - name: Publish NuGet Package
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
+        run: |
+          dotnet nuget push "**/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate
