@@ -1,33 +1,44 @@
 # Dockerfile to build and pack Zentient.Results supporting .NET 6, 8, 9
 
+# Use the stable .NET 9.0 SDK image.
+# This SDK is backward compatible and can build projects targeting .NET 6.0 and 8.0.
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 
-# Install additional SDKs for cross-targeting
-RUN apt-get update \
-    && apt-get install -y wget apt-transport-https software-properties-common \
-    && wget https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
-    && dpkg -i packages-microsoft-prod.deb \
-    && apt-get update \
-    && apt-get install -y dotnet-sdk-6.0 dotnet-sdk-8.0 \
-    && rm -rf /var/lib/apt/lists/*
+# Set environment variables to prevent telemetry and logo output
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=true \
+    DOTNET_NOLOGO=true
 
-WORKDIR /src
+# Install GitVersion.Tool globally
+RUN dotnet tool install --global GitVersion.Tool
 
-# Copy everything except what's ignored via .dockerignore
+# Install jq for JSON processing
+RUN apt-get update && \
+    apt-get install -y jq && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set the working directory inside the container to /app.
+WORKDIR /app
+
+# Copy the entire repository content into the /app directory in the container.
 COPY . .
 
-# Restore dependencies
+# Restore dependencies for the solution.
 RUN dotnet restore Zentient.Results.sln
 
-# Build and pack Zentient.Results
+# Build the solution in Release configuration.
 RUN dotnet build Zentient.Results.sln -c Release
-RUN dotnet pack Src/Results/Zentient.Results.csproj -c Release -o /artifacts
 
-# Final stage (optional): copy artifacts out
+# Run tests for the solution.
+RUN dotnet test Zentient.Results.sln --no-build --configuration Release
+
+# Pack the main NuGet package.
+RUN dotnet pack src/Results/Zentient.Results.csproj -c Release -o /artifacts --no-build
+
+# Final stage (optional, for local inspection): copy artifacts out
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS final
 
 WORKDIR /app
 COPY --from=build /artifacts ./
 
-# Default to listing the artifacts
+# Default command to list the built artifacts for verification
 CMD ["ls", "-l", "/app"]

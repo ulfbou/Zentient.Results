@@ -33,6 +33,7 @@ jobs:
             echo "ERROR: Zentient.Results.sln not found!" >&2
             exit 1
           fi
+        shell: bash
 
       - name: Cache NuGet packages
         uses: actions/cache@v3
@@ -45,7 +46,9 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.x
+          # IMPORTANT: Changed to 9.0 (stable) to support building projects targeting .NET 9.0,
+          # which also supports 6.0 and 8.0.
+          dotnet-version: 9.0
 
       - name: Install GitVersion
         uses: GitTools/actions/gitversion/setup@v0.10.2
@@ -56,19 +59,7 @@ jobs:
         id: gitversion
         uses: GitTools/actions/gitversion/execute@v0.10.2
 
-      # Linting steps are commented out as per previous request
-      # - name: Setup Node.js
-      #   uses: actions/setup-node@v4
-      #   with:
-      #     node-version: '18'
-      # - name: Lint commits
-      #   uses: wagoid/commitlint-github-action@v5
-      #   with:
-      #     configFile: ./commitlint.config.js
-      #     commit: ${{ github.event_name == 'push' && github.event.head_commit.message || github.event.pull_request.title }}
-      #     failOnWarnings: false
-      #     failOnErrors: true
-      #     helpURL: https://github.com/conventional-changelog/commitlint/#what-is-commitlint
+      # Linting steps are commented out for now
 
       - name: Restore dependencies
         run: dotnet restore Zentient.Results.sln
@@ -80,7 +71,7 @@ jobs:
         run: dotnet test Zentient.Results.sln --no-build --configuration Release
 
       - name: Pack NuGet Package
-        run: dotnet pack Src/Results/Zentient.Results.csproj -c Release /p:Version=${{ steps.gitversion.outputs.NuGetVersionV2 }} --no-build
+        run: dotnet pack src/Results/Zentient.Results.csproj -c Release /p:Version=${{ steps.gitversion.outputs.NuGetVersionV2 }} --no-build
 
       - name: Publish NuGet Package
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
