@@ -1,7 +1,6 @@
 # Dockerfile to build and pack Zentient.Results supporting .NET 6, 8, 9
 
 # Use the stable .NET 9.0 SDK image.
-# This SDK is backward compatible and can build projects targeting .NET 6.0 and 8.0.
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 
 # Set environment variables to prevent telemetry and logo output
@@ -21,6 +20,15 @@ WORKDIR /app
 
 # Copy the entire repository content into the /app directory in the container.
 COPY . .
+
+# --- START DEBUGGING STEPS INSIDE DOCKER ---
+# List contents of the /app directory (where your repo is copied)
+RUN echo "--- Contents of /app (after COPY) ---" && ls -aF /app
+RUN echo "--- Contents of /app/src (after COPY) ---" && ls -aF /app/src
+RUN echo "--- Contents of /app/tests (after COPY) ---" && ls -aF /app/tests
+# Display the content of the solution file as seen by Docker
+RUN echo "--- Contents of Zentient.Results.sln (inside Docker) ---" && cat Zentient.Results.sln
+# --- END DEBUGGING STEPS INSIDE DOCKER ---
 
 # Restore dependencies for the solution.
 RUN dotnet restore Zentient.Results.sln
