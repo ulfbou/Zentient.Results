@@ -7,7 +7,7 @@
 		<Nullable>enable</Nullable>
 
 		<PackageId>Zentient.Results</PackageId>
-		<Version>0.4.3</Version>
+		<Version>0.4.4</Version>
 		<Title>Zentient.Results</Title>
 		<Authors>Ulf Bourelius</Authors>
 		<Company>Ulf Bourelius</Company>
@@ -24,9 +24,9 @@
 
 		<AssemblyTitle>Zentient.Results</AssemblyTitle>
 		<AssemblyName>Zentient.Results</AssemblyName>
-		<AssemblyVersion>0.4.3.0</AssemblyVersion>
-		<FileVersion>0.4.3.0</FileVersion>
-		<InformationalVersion>0.4.3</InformationalVersion>
+		<AssemblyVersion>0.4.4.0</AssemblyVersion>
+		<FileVersion>0.4.4.0</FileVersion>
+		<InformationalVersion>0.4.4</InformationalVersion>
 
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<EmbedUntrackedSources>true</EmbedUntrackedSources>

@@ -22,9 +22,6 @@ namespace Zentient.Results
         [JsonPropertyName("value")]
         public T? Value { get; init; }
 
-        // Inherits _errors, _messages, IsSuccess, IsFailure, ErrorMessage, Status from Result base class.
-        // No need to redeclare private fields or properties that are already on the base class.
-
         /// <summary>
         /// Initializes a new instance of the <see cref="Result{T}"/> class.
         /// </summary>
@@ -139,6 +136,7 @@ namespace Zentient.Results
         public static IResult<T> Failure(T? value, IEnumerable<ErrorInfo> errors, IResultStatus? status = null)
         {
             ErrorInfo[] array = (errors as ErrorInfo[]) ?? errors?.ToArray() ?? throw new ArgumentNullException(nameof(errors));
+
             if (array.Length == 0)
             {
                 throw new ArgumentException("Error messages cannot be null or empty.", nameof(errors));

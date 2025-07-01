@@ -31,11 +31,11 @@ namespace Zentient.Results
     public class Result : IResult, IEquatable<Result>
     {
         [DataMember(Order = 1)]
-        [JsonInclude] // Explicitly include for System.Text.Json deserialization
+        [JsonInclude]
         private readonly ErrorInfo[] _errors;
 
         [DataMember(Order = 2)]
-        [JsonInclude] // Explicitly include for System.Text.Json deserialization
+        [JsonInclude]
         private readonly string[] _messages;
 
         /// <inheritdoc />

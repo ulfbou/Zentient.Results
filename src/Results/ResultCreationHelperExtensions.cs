@@ -1,4 +1,4 @@
-﻿// <copyright file="ResultCreationHelpersExtensions.cs" company="Zentient Framework Team">
+// <copyright file="ResultCreationHelpersExtensions.cs" company="Zentient Framework Team">
 // Copyright © 2025 Zentient Framework Team. All rights reserved.
 // </copyright>
 
@@ -82,8 +82,8 @@ namespace Zentient.Results
         public static IResult AsError<TException>(this TException ex, IResultStatus? status = null)
             where TException : Exception
         {
-            ArgumentNullException.ThrowIfNull(ex, nameof(ex)); // Add null check for extension method
-            return Result.FromException(ex, status); // This now correctly calls the updated FromException
+            ArgumentNullException.ThrowIfNull(ex, nameof(ex));
+            return Result.FromException(ex, status);
         }
 
         /// <summary>

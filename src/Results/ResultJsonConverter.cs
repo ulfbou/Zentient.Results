@@ -1,4 +1,4 @@
-﻿// <copyright file="ResultJsonConverter.cs" company="Zentient Framework Team">
+// <copyright file="ResultJsonConverter.cs" company="Zentient Framework Team">
 // Copyright © 2025 Zentient Framework Team. All rights reserved.
 // </copyright>
 
@@ -53,6 +53,7 @@ namespace Zentient.Results.Serialization
             {
                 Type valueType = typeToConvert.GetGenericArguments()[0];
                 Type converterType = typeof(ResultGenericJsonConverter<>).MakeGenericType(valueType);
+
                 return (JsonConverter)Activator.CreateInstance(
                     converterType,
                     BindingFlags.Instance | BindingFlags.Public,
@@ -336,9 +337,6 @@ namespace Zentient.Results.Serialization
                 return null;
             }
 
-            // Using JsonSerializer.Deserialize for ResultStatusInternal directly
-            // This relies on ResultStatusInternal having public setters or init properties
-            // and a parameterless constructor, or a suitable [JsonConstructor].
             return JsonSerializer.Deserialize<ResultStatusInternal>(ref reader, options);
         }
 
@@ -348,13 +346,8 @@ namespace Zentient.Results.Serialization
         /// <param name="reader">The <see cref="Utf8JsonReader"/> to read from.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> to use.</param>
         /// <returns>A <see cref="List{ErrorInfo}"/> deserialized from the JSON array, or <c>null</c> if the token is not a StartArray.</returns>
-        private static List<ErrorInfo>? DeserializeErrorInfoList(ref Utf8JsonReader reader, JsonSerializerOptions options)
-        {
-            // The existing `Deserialize<List<ErrorInfo>>` call is already correct and
-            // will leverage `System.Text.Json`'s default deserialization for ErrorInfo.
-            // This is the cleanest way given ErrorInfo's `init` properties.
-            return JsonSerializer.Deserialize<List<ErrorInfo>>(ref reader, options);
-        }
+        private static List<ErrorInfo>? DeserializeErrorInfoList(ref Utf8JsonReader reader, JsonSerializerOptions options) =>
+            JsonSerializer.Deserialize<List<ErrorInfo>>(ref reader, options);
 
         /// <summary>
         /// Reads a single <see cref="ErrorInfo"/> object from the JSON.
