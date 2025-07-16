@@ -1,4 +1,4 @@
-﻿// <copyright file="IResult.cs" company="Zentient Framework Team">
+// <copyright file="IResult.cs" company="Zentient Framework Team">
 // Copyright © 2025 Zentient Framework Team. All rights reserved.
 // </copyright>
 
@@ -23,8 +23,5 @@ namespace Zentient.Results
 
         /// <summary>Gets the message of the first error if the operation failed; otherwise, null.</summary>
         string? ErrorMessage { get; }
-
-        /// <summary>Gets the semantic status of the result, providing contextual information (e.g., HTTP-like status codes).</summary>
-        IResultStatus Status { get; }
     }
 }
