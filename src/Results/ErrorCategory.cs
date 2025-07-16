@@ -1,86 +1,97 @@
-﻿// <copyright file="ErrorCategory.cs" company="Zentient Framework Team">
+// <copyright file="ErrorCategory.cs" company="Zentient Framework Team">
 // Copyright © 2025 Zentient Framework Team. All rights reserved.
 // </copyright>
 
-using System.Runtime.Serialization; // Required for [EnumMember]
+using System.Runtime.Serialization;
 
 namespace Zentient.Results
 {
     /// <summary>
-    /// Represents categories for errors, providing strong typing for common error types.
-    /// This enum is crucial for structured error handling and mapping errors to appropriate
-    /// responses or logging behaviors.
+    /// Represents semantic categories for errors, providing strong typing for common types of failures
+    /// that occur within any domain or application layer. These categories are designed to be
+    /// broadly applicable across various system architectures and transport mechanisms.
+    /// This enum is strictly domain-centric and transport-agnostic.
     /// </summary>
+    /// <remarks>
+    /// Mapping to transport-specific codes (HTTP, gRPC, Messaging, etc.) should be handled externally.
+    /// The <see cref="ErrorInfo.Code"/> and <see cref="ErrorInfo.Detail"/> properties should be used
+    /// for more granular, specific error identification within these broader categories.
+    /// </remarks>
     public enum ErrorCategory
     {
-        /// <summary>Represents no specific error category. This is the default value.</summary>
-        [EnumMember(Value = "none")] None = 0,
+        /// <summary>No specific error category. Default for uninitialized or success scenarios.</summary>
+        [EnumMember(Value = "none")]
+        None = 0,
 
-        /// <summary>A general, uncategorized error. Use when a more specific category isn't applicable.</summary>
-        [EnumMember(Value = "general")] General,
+        // --- General / Unclassified Error ---
 
-        /// <summary>An error related to input validation, indicating that provided data is invalid or missing.</summary>
-        [EnumMember(Value = "validation")] Validation,
+        /// <summary>A general, uncategorized error. Use when no other specific category applies.</summary>
+        [EnumMember(Value = "general")]
+        General,
 
-        /// <summary>An error during authentication, such as invalid credentials or missing authentication tokens.</summary>
-        [EnumMember(Value = "authentication")] Authentication,
+        // --- Client / Input Related Errors ---
 
-        /// <summary>An error due to insufficient authorization, meaning the authenticated user lacks the necessary permissions.</summary>
-        [EnumMember(Value = "authorization")] Authorization,
+        /// <summary>Input data is malformed, missing, or fails basic structural validation rules.</summary>
+        /// <remarks>This typically relates to the syntactical correctness and completeness of the provided data.</remarks>
+        [EnumMember(Value = "validation")]
+        Validation,
 
-        /// <summary>A requested resource was not found.</summary>
-        [EnumMember(Value = "not_found")] NotFound,
+        /// <summary>The client's request or operation is semantically incorrect, illogical for the current context, or cannot be processed due to a fundamental misunderstanding of the domain's expected state or sequence of operations.</summary>
+        /// <remarks>This category covers issues where the request is "bad" beyond simple data validation, indicating a client-side semantic error.</remarks>
+        [EnumMember(Value = "bad_request")]
+        BadRequest,
 
-        /// <summary>A conflict occurred, typically when attempting to create a resource that already exists, or a state conflict.</summary>
-        [EnumMember(Value = "conflict")] Conflict,
+        /// <summary>Authentication failed, meaning the identity of the caller could not be established (e.g., missing, invalid, or expired credentials).</summary>
+        [EnumMember(Value = "authentication")]
+        Authentication,
 
-        /// <summary>An unhandled or unexpected exception occurred within the application logic.</summary>
-        [EnumMember(Value = "exception")] Exception,
+        /// <summary>Authorization failed, meaning the authenticated caller lacks the necessary permissions to perform the requested operation on a specific resource.</summary>
+        [EnumMember(Value = "authorization")]
+        Authorization,
 
-        /// <summary>An error related to network connectivity or communication issues with external services.</summary>
-        [EnumMember(Value = "network")] Network,
+        // --- Domain / Business Logic Related Errors ---
 
-        /// <summary>An error related to a database operation, such as connection issues, query failures, or constraint violations.</summary>
-        [EnumMember(Value = "database")] Database,
+        /// <summary>The requested resource or entity was not found in the system's data store or context.</summary>
+        /// <remarks>This applies when a specific identified entity cannot be located.</remarks>
+        [EnumMember(Value = "not_found")]
+        NotFound,
 
-        /// <summary>A timeout error occurred, indicating an operation did not complete within a specified time limit.</summary>
-        [EnumMember(Value = "timeout")] Timeout,
+        /// <summary>A conflict occurred during an operation, typically when attempting to create a resource that already exists, or when the current state of a resource prevents the operation (e.g., optimistic concurrency violation, unique constraint violation, resource locked).</summary>
+        [EnumMember(Value = "conflict")]
+        Conflict,
 
-        /// <summary>An error related to a security vulnerability or a security-related policy violation.</summary>
-        [EnumMember(Value = "security")] Security,
+        /// <summary>A violation of core business rules, domain invariants, or application-specific constraints occurred.</summary>
+        /// <remarks>This is distinct from 'Validation' (input format) and 'Conflict' (state conflicts), focusing on domain-specific policy violations.</remarks>
+        [EnumMember(Value = "business_rule")]
+        BusinessRule,
 
-        /// <summary>An error related to the client's request itself, such as a malformed request body or invalid headers.</summary>
-        [EnumMember(Value = "request")] Request,
+        /// <summary>The requested operation or feature is conceptually valid within the domain but is not implemented or supported in the current version/configuration of the system.</summary>
+        [EnumMember(Value = "not_implemented")]
+        NotImplemented,
 
-        /// <summary>An error related to concurrent operations, such as optimistic concurrency conflicts when updating data.</summary>
-        [EnumMember(Value = "concurrency")] Concurrency,
+        // --- System / Infrastructure Related Errors ---
 
-        /// <summary>An error indicating that too many requests have been made in a given amount of time (rate limiting).</summary>
-        [EnumMember(Value = "too_many_requests")] TooManyRequests,
+        /// <summary>An unexpected internal error occurred within the application's runtime or core infrastructure that is not directly attributable to client input or a specific business rule violation.</summary>
+        /// <remarks>This typically signifies a bug, an unhandled infrastructure issue, or a critical system component failure.</remarks>
+        [EnumMember(Value = "internal_error")]
+        InternalError,
 
-        /// <summary>An error related to an issue with an external service or a dependency.</summary>
-        [EnumMember(Value = "external_service")] ExternalService,
+        /// <summary>An error related to an external dependency or service failing, or an issue communicating with it.</summary>
+        /// <remarks>This includes failures with databases, external APIs, message brokers, file storage, caches, etc.</remarks>
+        [EnumMember(Value = "external_dependency")]
+        ExternalDependency,
 
-        /// <summary>An error related to business logic rules or constraints that were violated.</summary>
-        [EnumMember(Value = "business_logic")] BusinessLogic,
+        /// <summary>A timeout occurred during an operation, indicating it did not complete within a specified time limit, typically due to a slow dependency or complex computation.</summary>
+        [EnumMember(Value = "timeout")]
+        Timeout,
 
-        /// <summary>An error indicating that the requested resource is no longer available at the origin server.</summary>
-        [EnumMember(Value = "gone")] ResourceGone,
+        /// <summary>The system or a specific service is temporarily unavailable or operating under severe constraints (e.g., overloaded, undergoing maintenance, out of capacity).</summary>
+        /// <remarks>This suggests a transient condition where retrying later might succeed.</remarks>
+        [EnumMember(Value = "service_unavailable")]
+        ServiceUnavailable,
 
-        /// <summary>An error indicating that the requested operation or feature is not implemented.</summary>
-        [EnumMember(Value = "not_implemented")] NotImplemented,
-
-        /// <summary>An error indicating an internal server issue or unexpected condition.</summary>
-        /// <remarks>This is often a catch-all for server-side failures not covered by more specific categories.</remarks>
-        [EnumMember(Value = "internal_server_error")] InternalServerError,
-
-        /// <summary>An error indicating that the service is temporarily unavailable, usually due to maintenance or overload.</summary>
-        [EnumMember(Value = "service_unavailable")] ServiceUnavailable,
-
-        /// <summary>An error indicating a problem with the API specification or a generic problem details response structure.</summary>
-        [EnumMember(Value = "problem_details")] ProblemDetails,
-
-        /// <summary>An error indicating that the client has exceeded the allowed rate limit for requests.</summary>
-        [EnumMember(Value = "rate_limit")] RateLimit,
+        /// <summary>A security violation detected beyond standard authentication/authorization failures, such as data tampering, policy breaches, or suspicious activity.</summary>
+        [EnumMember(Value = "security_violation")]
+        SecurityViolation
     }
 }
