@@ -1,4 +1,4 @@
-﻿// <copyright file="ResultJsonConverter.cs" company="Zentient Framework Team">
+// <copyright file="ResultJsonConverter.cs" company="Zentient Framework Team">
 // Copyright © 2025 Zentient Framework Team. All rights reserved.
 // </copyright>
 
@@ -105,7 +105,6 @@ namespace Zentient.Results.Serialization
                     throw new JsonException("Expected StartObject token for Result.");
                 }
 
-                IResultStatus? status = null;
                 List<ErrorInfo>? errors = null;
                 List<string>? messages = null;
 
@@ -123,9 +122,6 @@ namespace Zentient.Results.Serialization
 
                         switch (propertyName.ToLowerInvariant())
                         {
-                            case JsonConstants.Result.Status:
-                                status = ResultJsonConverter.ReadStatus(ref reader, _options);
-                                break;
                             case JsonConstants.Result.Messages:
                                 messages = JsonSerializer.Deserialize<List<string>>(ref reader, _options);
                                 break;
@@ -144,7 +140,7 @@ namespace Zentient.Results.Serialization
                     }
                 }
 
-                return new Result(status ?? ResultStatuses.Error, messages, errors);
+                return new Result(messages, errors);
             }
 
             /// <inheritdoc/>
@@ -164,18 +160,18 @@ namespace Zentient.Results.Serialization
                 writer.WriteBoolean(ResultJsonConverter.ConvertName(_options, JsonConstants.Result.IsSuccess), value.IsSuccess);
                 writer.WriteBoolean(ResultJsonConverter.ConvertName(_options, JsonConstants.Result.IsFailure), value.IsFailure);
                 writer.WritePropertyName(ResultJsonConverter.ConvertName(_options, JsonConstants.Result.Status));
-                JsonSerializer.Serialize(writer, value.Status, value.Status.GetType(), _options);
+                JsonSerializer.Serialize(writer, _options);
 
                 if (value.Messages != null && value.Messages.Any())
                 {
                     writer.WritePropertyName(ResultJsonConverter.ConvertName(_options, JsonConstants.Result.Messages));
-                    JsonSerializer.Serialize(writer, value.Messages, _options);
+                    JsonSerializer.Serialize(writer, _options);
                 }
 
                 if (value.IsFailure && value.Errors != null && value.Errors.Any())
                 {
                     writer.WritePropertyName(ResultJsonConverter.ConvertName(_options, JsonConstants.Result.Errors));
-                    JsonSerializer.Serialize(writer, value.Errors, _options);
+                    JsonSerializer.Serialize(writer, _options);
                 }
 
                 if (value.ErrorMessage != null)
@@ -225,7 +221,6 @@ namespace Zentient.Results.Serialization
                 }
 
                 TValue? value = default;
-                IResultStatus? status = null;
                 List<ErrorInfo>? errors = null;
                 List<string>? messages = null;
 
@@ -246,9 +241,6 @@ namespace Zentient.Results.Serialization
                             case JsonConstants.Result.Value:
                                 value = JsonSerializer.Deserialize<TValue>(ref reader, _options);
                                 break;
-                            case JsonConstants.Result.Status:
-                                status = ResultJsonConverter.ReadStatus(ref reader, _options);
-                                break;
                             case JsonConstants.Result.Errors:
                                 errors = ResultJsonConverter.DeserializeErrorInfoList(ref reader, _options);
                                 break;
@@ -267,7 +259,7 @@ namespace Zentient.Results.Serialization
                     }
                 }
 
-                return new Result<TValue>(value, status ?? ResultStatuses.Error, messages, errors);
+                return new Result<TValue>(value, messages, errors);
             }
 
             /// <inheritdoc/>
@@ -292,25 +284,25 @@ namespace Zentient.Results.Serialization
                 }
                 else
                 {
-                    JsonSerializer.Serialize(writer, value.Value, _options);
+                    JsonSerializer.Serialize(writer, _options);
                 }
 
                 writer.WriteBoolean(ResultJsonConverter.ConvertName(_options, JsonConstants.Result.IsSuccess), value.IsSuccess);
                 writer.WriteBoolean(ResultJsonConverter.ConvertName(_options, JsonConstants.Result.IsFailure), value.IsFailure);
 
                 writer.WritePropertyName(ResultJsonConverter.ConvertName(_options, JsonConstants.Result.Status));
-                JsonSerializer.Serialize(writer, value.Status, value.Status.GetType(), _options);
+                JsonSerializer.Serialize(writer, _options);
 
                 if (value.Messages != null && value.Messages.Any())
                 {
                     writer.WritePropertyName(ResultJsonConverter.ConvertName(_options, JsonConstants.Result.Messages));
-                    JsonSerializer.Serialize(writer, value.Messages, _options);
+                    JsonSerializer.Serialize(writer, _options);
                 }
 
                 if (value.IsFailure && value.Errors != null && value.Errors.Any())
                 {
                     writer.WritePropertyName(ResultJsonConverter.ConvertName(_options, JsonConstants.Result.Errors));
-                    JsonSerializer.Serialize(writer, value.Errors, _options);
+                    JsonSerializer.Serialize(writer, _options);
                 }
 
                 if (value.ErrorMessage != null)
@@ -320,26 +312,6 @@ namespace Zentient.Results.Serialization
 
                 writer.WriteEndObject();
             }
-        }
-
-        /// <summary>
-        /// Reads an <see cref="IResultStatus"/> object from the JSON.
-        /// </summary>
-        /// <param name="reader">The <see cref="Utf8JsonReader"/> to read from.</param>
-        /// <param name="options">The <see cref="JsonSerializerOptions"/> to use.</param>
-        /// <returns>A new <see cref="IResultStatus"/> instance deserialized from the JSON, or <c>null</c> if not found or invalid.</returns>
-        private static IResultStatus? ReadStatus(ref Utf8JsonReader reader, JsonSerializerOptions options)
-        {
-            if (reader.TokenType != JsonTokenType.StartObject)
-            {
-                reader.Skip();
-                return null;
-            }
-
-            // Using JsonSerializer.Deserialize for ResultStatusInternal directly
-            // This relies on ResultStatusInternal having public setters or init properties
-            // and a parameterless constructor, or a suitable [JsonConstructor].
-            return JsonSerializer.Deserialize<ResultStatusInternal>(ref reader, options);
         }
 
         /// <summary>
@@ -377,18 +349,5 @@ namespace Zentient.Results.Serialization
         /// <returns>The converted property name.</returns>
         private static string ConvertName(JsonSerializerOptions options, string name) =>
             options.PropertyNamingPolicy?.ConvertName(name) ?? name;
-
-        /// <summary>
-        /// Internal DTO to deserialize <see cref="IResultStatus"/> as a concrete type.
-        /// This is necessary because <see cref="IResultStatus"/> is an interface.
-        /// </summary>
-        private sealed class ResultStatusInternal : IResultStatus
-        {
-            /// <inheritdoc/>
-            public int Code { get; init; }
-
-            /// <inheritdoc/>
-            public string Description { get; init; } = string.Empty;
-        }
     }
 }
